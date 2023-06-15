@@ -46,219 +46,149 @@ public:
   bool exist;
   SDL_Color clr;
   uint8_t visited;
-  bool employed;
+  bool is_deadend;
 };
 
-bool IsNear(int a, int b, int fx)
+void Print_stack(stack <int> st)
 {
-  if ((a == b + 1) || (a == b - 1))
-    return true;
 
-  if ((a == b + fx) || (a == b - fx))
-    return true;
-
-  if ((a == b + 1 + fx) || (a == b - 1 + fx))
-    return true;
-
-  if ((a == b + 1 - fx) || (a == b - 1 - fx))
-    return true;
-
-  return false;
+  cout << " Stack size = " << st.size() << endl;
+  cout << " Stack ftom top to bottom:" << endl;
+  while (!st.empty())
+  {
+    cout << st.top() << endl;
+    st.pop();
+  }
 }
 
-
-bool dfs(Dots* dots, int current, stack<int>& st, int fx , int fy)
+int Different_ways( Dots* dots, int current, int fx , int fy)
 {
-  st.push(current);
+  int retval = 0;
+
+  if (((current + 1) % fx != 0) && (dots[current + 1].exist == true)
+    && (dots[current + 1].is_deadend != true))
+    retval++;
+
+  if ( (( current + 1) % fx != 0) && ( current + fx < fx * fy )
+     && (dots[current + 1 + fx].exist == true)
+     && (dots[current + 1 + fx].is_deadend != true))
+    retval++;
+
+  if (( current + fx < fx * fy ) && (dots[current + fx].exist == true)
+    && (dots[current + fx].is_deadend != true))
+    retval++;
+
+  if (( current % fx != 0) && ( current + fx < fx * fy )
+    && (dots[current - 1 + fx].exist == true)
+    && (dots[current - 1 + fx].is_deadend != true))
+    retval++;
+
+  if ( ( current % fx != 0) && (dots[current - 1].exist == true)
+    && (dots[current - 1].is_deadend != true))
+    retval++;
+
+  if ( ( current % fx != 0) && ( current - fx >= 0)
+    && (dots[current - 1 - fx].exist == true)
+    && (dots[current - 1 - fx].is_deadend != true))
+    retval++;
+
+  if (( current - fx >= 0) && (dots[current - fx].exist == true)
+    && (dots[current - fx].is_deadend != true))  
+    retval++;
+
+  if ( (( current + 1) % fx != 0) && ( current - fx >= 0 )
+     && (dots[current + 1 - fx].exist == true)
+     && (dots[current + 1 - fx].is_deadend != true))
+    retval++;
+
+  return retval;
+}
+
+bool dfs (Dots* dots, int current, stack<int>& st, int fx , int fy)
+{
   int Can_move_on = 0;
-  dots[current].visited = true;
-  bool Cycle_found = false;
+  dots[current].visited++;
+  
+  if (dots[current].visited > 1)
+    return true;
 
-  // right direction
-  if (((current + 1) % fx != 0) && (dots[current + 1].exist == true))
-  {                  
-    if (dots[current + 1].visited == false) 
-    {
-      dots[current + 1].visited = true;
-      dfs(dots, current + 1, st, fx, fy);
+  if (Different_ways(dots, current, fx , fy) <= 1)
+  {  
+    dots[current].is_deadend = true;
+    while (!st.empty() && (Different_ways(dots, st.top(), fx , fy) <= 1))
+    { 
+      dots[st.top()].is_deadend = true;
+      st.pop();
     }
-    else if ((st.size() >= 3) && (dots[current + 1].visited == true) )
-    {
-      st.pop();
-      int temp = st.top();
-      st.pop();
-      if ((temp != current + 1) && (!IsNear(st.top(), current + 1, fx)))
-        Cycle_found = true;
-
-      st.push(temp);
-      st.push(current);
-    }  
+  }
+  else
+    st.push(current);
+  
+  // right direction
+  if (((current + 1) % fx != 0) && (dots[current + 1].exist == true)
+    && (dots[current + 1].is_deadend == false))
+  {                  
+    dfs(dots, current + 1, st, fx, fy);  
   }
 
   //down-right direction  
   if ( (( current + 1) % fx != 0) && ( current + fx < fx * fy )
-     && (dots[current + 1 + fx].exist == true))   
+     && (dots[current + 1 + fx].exist == true)
+     && (dots[current + 1 + fx].is_deadend == false))   
   {
-    if (dots[current + 1 + fx].visited == false)
-    {
-      dots[current + 1 + fx].visited = true;
-      dfs(dots, current + 1 + fx, st, fx, fy);
-    }
-    else if ((st.size() >= 3) && (dots[current + 1 + fx].visited == true) )
-    {
-      st.pop();
-      int temp = st.top();
-      st.pop();
-      if ((temp != current + 1 + fx)
-        && (!IsNear(st.top(), current + 1 + fx, fx)))
-        Cycle_found = true;
-
-      st.push(temp);
-      st.push(current);
-    }      
+    dfs(dots, current + 1 + fx, st, fx, fy);      
   }
 
   // down direction
-  if (( current + fx < fx * fy ) && (dots[current + fx].exist == true))
+  if (( current + fx < fx * fy ) && (dots[current + fx].exist == true)
+    && (dots[current + fx].is_deadend == false))
   { 
-    if (dots[current + fx].visited == false)
-    {
-      dots[current + fx].visited = true;
-      dfs(dots, current + fx, st, fx, fy);
-    }
-    else if ((st.size() >= 3) && (dots[current + fx].visited == true) )
-    {
-      st.pop();
-      int temp = st.top();
-      st.pop();
-      if ((temp != current + fx)  && (!IsNear(st.top(), current + fx, fx)))
-        Cycle_found = true;
-
-      st.push(temp);
-      st.push(current);
-    }  
+    dfs(dots, current + fx, st, fx, fy);  
   }
 
   //down-left direction
   if (( current % fx != 0) && ( current + fx < fx * fy )
-     && (dots[current - 1 + fx].exist == true))
+     && (dots[current - 1 + fx].exist == true)
+     && (dots[current - 1 + fx].is_deadend == false))
   { 
-    if (dots[current - 1 + fx].visited == false)
-    {
-      dots[current - 1 + fx].visited = true;
-      dfs(dots, current - 1 + fx, st, fx, fy);
-    }
-    else if ((st.size() >= 3) && (dots[current - 1 + fx].visited == true) )
-    {
-      st.pop();
-      int temp = st.top();
-      st.pop();
-      if ((temp != current - 1 + fx)
-        && (!IsNear(st.top(), current - 1 + fx, fx)))
-        Cycle_found = true;
-
-      st.push(temp);      
-      st.push(current);
-    }  
+    dfs(dots, current - 1 + fx, st, fx, fy);  
   }
 
   // left direction
-  if ( ( current % fx != 0) && (dots[current - 1].exist == true))
+  if ( ( current % fx != 0) && (dots[current - 1].exist == true)
+    && (dots[current - 1].is_deadend == false))
   {  
-    if (dots[current - 1].visited == false) 
-    {
-      dots[current - 1].visited = true;
-      dfs(dots, current - 1, st, fx, fy);
-    }
-    else if ((st.size() >= 3) && (dots[current - 1].visited == true) )
-    {
-      st.pop();
-      int temp = st.top();
-      st.pop();
-      if ((temp != current - 1)  && (!IsNear(st.top(), current - 1, fx)))
-        Cycle_found = true;
-
-      st.push(temp);      
-      st.push(current);
-    }  
+    dfs(dots, current - 1, st, fx, fy);  
   }
 
   //up-left direction 
   if ( ( current % fx != 0) && ( current - fx >= 0)
-     && (dots[current - 1 - fx].exist == true))
+     && (dots[current - 1 - fx].exist == true)
+     && (dots[current - 1 - fx].is_deadend == false))
   {
-    if (dots[current - 1 - fx].visited == false)
-    {
-      dots[current - 1 - fx].visited = true;
-      dfs(dots, current - 1 - fx, st, fx, fy);
-    }
-    else if ((st.size() >= 3) && (dots[current - 1 - fx].visited == true) )
-    {
-      st.pop();
-      int temp = st.top();
-      st.pop();
-      if ((temp != current - 1 - fx)
-        && (!IsNear(st.top(), current - 1 - fx, fx)))
-        Cycle_found = true;
-
-      st.push(temp);      
-      st.push(current);
-    }  
+    dfs(dots, current - 1 - fx, st, fx, fy);  
   }
 
   // up diterction
-  if (( current - fx >= 0) && (dots[current - fx].exist == true))                                        
+  if (( current - fx >= 0) && (dots[current - fx].exist == true)
+    && (dots[current - fx].is_deadend == false))                                        
   { 
-    if (dots[current - fx].visited == false)
-    {
-      dots[current - fx].visited = true;
-      dfs(dots, current - fx, st, fx, fy);
-    }
-    else if ((st.size() >= 3) && (dots[current - fx].visited == true) )
-    {
-      st.pop();
-      int temp = st.top();
-      st.pop();
-      if ((temp != current - fx) && (!IsNear(st.top(), current - fx, fx)))
-        Cycle_found = true;
-
-      st.push(temp);      
-      st.push(current);
-    }  
+    dfs(dots, current - fx, st, fx, fy);  
   }  
 
   //up-right direction
   if ( (( current + 1) % fx != 0) && ( current - fx >= 0 )
-     && (dots[current + 1 - fx].exist == true))
+     && (dots[current + 1 - fx].exist == true)
+     && (dots[current + 1 - fx].is_deadend == false))
   {
-    if (dots[current + 1 - fx].visited == false)
-    {
-      dots[current + 1 - fx].visited = true;
-      dfs(dots, current + 1 - fx, st, fx, fy);
-    }
-    else if ((st.size() >= 3) && (dots[current + 1 - fx].visited == true) )
-    {
-
-      st.pop();
-      int temp = st.top();
-      st.pop();
-      if ((temp != current + 1 - fx)  
-        && (!IsNear(st.top(), current + 1 - fx, fx)))
-        Cycle_found = true;
-
-      st.push(temp);      
-      st.push(current);
-    }  
+    dfs(dots, current + 1 - fx, st, fx, fy);
   }
 
-  return Cycle_found;
+  return false;
 }
 
 void FindContour (Dots* dots, int fx, int fy)
 {
-  for (int i = 0; i < (fx + 2) * (fy + 2); i++)
-    dots[i].visited = 0;
-  
   int nnvisited = 0;
   while ((nnvisited < fx * fy) && (dots[nnvisited].exist == false))
     nnvisited++;
@@ -269,9 +199,12 @@ void FindContour (Dots* dots, int fx, int fy)
   stack <int> st;
 
   int current = nnvisited;
-  cout << std::boolalpha << "Cycle found is " << dfs(dots, current, st, fx, fy)
+
+
+  cout << std::boolalpha << dfs(dots, current, st, fx, fy)
     << endl;
-  cout << " Stack size = " << st.size() << endl;
+
+  Print_stack(st);
 }
 
 void MoveBoard(int fx, int fy)
@@ -1049,6 +982,11 @@ int main(int argc, char *argv[])
     DrawDots(dots, dots_menu_size, field_x_size);
     EnumerateField(field_y_base, field_x_base, my_Font);
     Zoom();
+    for (int i = 0; i < dots_menu_size; i++)
+    {
+      dots[i].visited = 0;
+      dots[i].is_deadend = false;
+    }
     FindContour(dots, field_x_base, field_y_base);
     
     NewButton.Draw();
