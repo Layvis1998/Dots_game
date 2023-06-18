@@ -75,7 +75,6 @@ SDL_Rect rectangle;
 SDL_Rect rectangle2;
 SDL_Rect rectangle3;
 ColorButton P21(25, 170, 100);
-
 ColorButton P22(100, 0, 150);
 ColorButton P31(255, 0, 0);
 ColorButton P32(0, 255, 0);
@@ -108,7 +107,6 @@ void Print_stack(stack <int> st)
 
 void Print_mset(multiset <int> st)
 {
-
   cout << " Mset size = " << st.size() << endl;
   cout << " The values are" << endl;
   for (auto c: st)
