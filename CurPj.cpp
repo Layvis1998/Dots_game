@@ -847,10 +847,10 @@ bool operator==(SDL_Color a, SDL_Color b)
 void MainMenu()
 {
   ButtonVector[0].keytrick = false;
-  ButtonVector[4].keytrick = false;
-  ButtonVector[3].keytrick = false;
-  ButtonVector[2].keytrick = false;
   ButtonVector[1].keytrick = false;
+  ButtonVector[2].keytrick = false;
+  ButtonVector[3].keytrick = false;
+  ButtonVector[4].keytrick = false;
 
   for (int i = 0; i < dots_menu_size; i++)
     dots[i].exist = false;
@@ -861,8 +861,8 @@ void MainMenu()
     ButtonVector[0].Update(mouse);
     ButtonVector[1].Update(mouse);
     ButtonVector[2].Update(mouse);    
-    ButtonVector[4].Update(mouse);
     ButtonVector[3].Update(mouse);
+    ButtonVector[4].Update(mouse);
 
     SDL_PollEvent(&event);
     if ((event.type == SDL_KEYDOWN) && (event.type == SDL_QUIT))
@@ -882,11 +882,17 @@ void MainMenu()
       ButtonVector[0].keytrick = true;
 
     if ( (event.key.keysym.sym == SDLK_n) && (event.type == SDL_KEYUP) )
+    {
       GameState = SAP;
+      return;
+    }
 
     if ( (event.button.button == SDL_BUTTON_LEFT) && (ButtonVector[0].IsSelected)
       && (event.type == SDL_MOUSEBUTTONUP)) 
+    {
       GameState = SAP;
+      return;
+    }
 
     if( (event.key.keysym.sym == SDLK_c) && (event.type == SDL_KEYDOWN) )
       ButtonVector[3].keytrick = true;
@@ -921,8 +927,8 @@ void MainMenu()
     ButtonVector[0].Draw();
     ButtonVector[1].Draw();
     ButtonVector[2].Draw();
-    ButtonVector[4].Draw();
     ButtonVector[3].Draw();
+    ButtonVector[4].Draw();
     mouse.DrawCircle(cur_color);
 
     SDL_RenderPresent(renderer);
@@ -992,21 +998,21 @@ void CreditsMenu()
 
 void SelectAmountOfPlayersMenu()
 {
-  ButtonVector[9].keytrick = false;
   ButtonVector[5].keytrick = false;
   ButtonVector[6].keytrick = false;
   ButtonVector[7].keytrick = false;
   ButtonVector[8].keytrick = false;
+  ButtonVector[9].keytrick = false;
   for (int i = 0; i < dots_menu_size; i++)
     dots[i].exist = false;
 
   while (1)
   {
-    ButtonVector[9].Update(mouse);
     ButtonVector[5].Update(mouse);
     ButtonVector[6].Update(mouse);
     ButtonVector[7].Update(mouse);
     ButtonVector[8].Update(mouse);
+    ButtonVector[9].Update(mouse);
     mouse.Update();
     SDL_PollEvent(&event);
     if (event.type == SDL_KEYDOWN && event.type == SDL_QUIT)
@@ -1112,11 +1118,11 @@ void SelectAmountOfPlayersMenu()
     EnumerateField(field_y_base, field_x_base, my_Font);
 
     LabelVector[0].Draw();
-    ButtonVector[9].Draw();
     ButtonVector[5].Draw();
     ButtonVector[6].Draw();
     ButtonVector[7].Draw();
     ButtonVector[8].Draw();
+    ButtonVector[9].Draw();
     mouse.DrawCircle(cur_color);
     
     SDL_RenderPresent(renderer);
@@ -1190,8 +1196,8 @@ void TwoPlayerMenu()
   while (1)
   {
     mouse.Update();
-    ButtonVector[12].Update(mouse);
     ButtonVector[10].Update(mouse);
+    ButtonVector[12].Update(mouse);
     P21.Update(mouse);
     P22.Update(mouse);
     SDL_PollEvent(&event);
@@ -1264,11 +1270,12 @@ void TwoPlayerMenu()
 
     P21.Draw();
     P22.Draw();
-    ButtonVector[12].Draw();
+
     LabelVector[3].Draw();
     LabelVector[4].Draw();
     LabelVector[5].Draw();
     ButtonVector[10].Draw();
+    ButtonVector[12].Draw();
     mouse.DrawCircle(cur_color);
     
     SDL_RenderPresent(renderer);
@@ -1285,8 +1292,8 @@ void ThreePlayerMenu()
   while (1)
   {
     mouse.Update();
-    ButtonVector[12].Update(mouse);
     ButtonVector[10].Update(mouse);
+    ButtonVector[12].Update(mouse);
     P31.Update(mouse);
     P32.Update(mouse);
     P33.Update(mouse);
@@ -1388,8 +1395,8 @@ void FourPlayerMenu()
   while (1)
   {
     mouse.Update();
-    ButtonVector[12].Update(mouse);
     ButtonVector[10].Update(mouse);
+    ButtonVector[12].Update(mouse);
     P41.Update(mouse);
     P42.Update(mouse);
     P43.Update(mouse);
@@ -1477,8 +1484,8 @@ void FourPlayerMenu()
 
     LabelVector[3].Draw();
     LabelVector[4].Draw();
-    ButtonVector[10].Draw();
     LabelVector[5].Draw();
+    ButtonVector[10].Draw();
     ButtonVector[12].Draw();
     P41.Draw();
     P42.Draw();
@@ -1502,8 +1509,8 @@ void GameSizeMenu()
   while (1)
   {
     mouse.Update();
-    ButtonVector[12].Update(mouse);
     ButtonVector[11].Update(mouse);
+    ButtonVector[12].Update(mouse);
 
     SDL_PollEvent(&event);
     if (event.type == SDL_KEYDOWN && event.type == SDL_QUIT)
@@ -1528,11 +1535,11 @@ void GameSizeMenu()
       return;
     }
 
-    if ( (event.key.keysym.sym == SDLK_c) && (event.type == SDL_KEYDOWN) )
-      ButtonVector[12].keytrick = true;
-
     if( (event.key.keysym.sym == SDLK_b) && (event.type == SDL_KEYDOWN) )
       ButtonVector[11].keytrick = true;
+
+    if ( (event.key.keysym.sym == SDLK_c) && (event.type == SDL_KEYDOWN) )
+      ButtonVector[12].keytrick = true;
 
     if ( (event.key.keysym.sym == SDLK_b) && (event.type == SDL_KEYUP) )
     {
@@ -1760,9 +1767,9 @@ void GameRuleMenu()
     Zoom();
     EnumerateField(game_y_size, game_x_size, my_Font);
 
-    ButtonVector[14].Draw();
-    ButtonVector[13].Draw();
     ButtonVector[10].Draw();
+    ButtonVector[13].Draw();
+    ButtonVector[14].Draw();
     LabelVector[8].Draw();
     mouse.DrawCircle(cur_color);
     SDL_RenderPresent(renderer);
