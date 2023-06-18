@@ -2,6 +2,9 @@
 #include <err.h>
 #include <string>
 #include <stack>
+#include <iterator>
+#include <set>
+#include <vector>
 #include <SDL2/SDL.h>
 
 #include <SDL2/SDL_image.h>
@@ -19,27 +22,6 @@ if _WIN32
 #endif     
 */
 
-//global constants
-int intrv = 20; // interval
-const uint8_t red_default = 25;
-const uint8_t green_default = 80;
-const uint8_t blue_default = 80;
-const int field_x_base = 100;
-const int field_y_base = 200;
-
-//gloabal variables
-uint8_t red = 25;
-uint8_t green = 80;
-uint8_t blue = 80;
-int x_c = 0;
-int y_c = 0;
-int ScWidth;
-int ScHeight;
-SDL_Color cur_color;
-int xMouse, yMouse;
-int field_x_size = field_x_base;
-int field_y_size = field_y_base;
-
 class Dots
 {
 public:
@@ -49,9 +31,71 @@ public:
   bool is_deadend;
 };
 
+//global constants
+int intrv = 20; // interval
+const uint8_t red_default = 25;
+const uint8_t green_default = 80;
+const uint8_t blue_default = 80;
+const int field_x_base = 150;
+const int field_y_base = 240;
+const int dots_menu_size = int(field_x_base + 2) * int(field_y_base + 2);
+const int field_x_credits = 50;
+const int field_y_credits = 100;
+const int dots_credits_size = int(field_y_credits + 2) * int(field_x_credits + 2);
+
+//gloabal variables
+vector <Button> ButtonVector;
+vector <Label> LabelVector;
+Dots dots[dots_menu_size];
+Dots dots_c[dots_credits_size];
+Dots* dots_g;
+char* field_x;
+char* field_y;  
+SDL_Surface* surfaceText;
+SDL_Surface* surfaceText2;
+SDL_Surface* surfaceText3;
+TTF_Font* my_Font;
+uint8_t red = 25;
+uint8_t green = 80;
+uint8_t blue = 80;
+int x_c = 0;
+int y_c = 0;
+int ScWidth;
+int ScHeight;
+int field_x_size = field_x_base;
+int field_y_size = field_y_base;
+int game_x_size = 30;
+int game_y_size = 30;
+int rectangle_w;
+int rectangle_h;
+SDL_Texture *textureText;
+SDL_Texture *textureText2;
+SDL_Texture *textureText3;
+SDL_Rect rectangle;
+SDL_Rect rectangle2;
+SDL_Rect rectangle3;
+ColorButton P21(25, 170, 100);
+
+ColorButton P22(100, 0, 150);
+ColorButton P31(255, 0, 0);
+ColorButton P32(0, 255, 0);
+ColorButton P33(0, 0, 255);
+ColorButton P41(0, 255, 10);
+ColorButton P42(255, 10, 0);
+ColorButton P43(0, 10, 255);
+ColorButton P44(240, 240, 0);
+ 
+Mouse mouse;
+uint8_t pa_back = 1;
+SDL_Color white = {255, 255, 255, 255};
+SDL_Color cur_color;
+int xMouse, yMouse;
+
+enum GameStateType {Menu, Credits, SAP, ONEPM, TWOPM, THREEPM, FOURPM, GSM, GRM, Game};
+GameStateType GameState;
+
 void Print_stack(stack <int> st)
 {
-
   cout << " Stack size = " << st.size() << endl;
   cout << " Stack ftom top to bottom:" << endl;
   while (!st.empty())
@@ -59,6 +103,18 @@ void Print_stack(stack <int> st)
     cout << st.top() << endl;
     st.pop();
   }
+  cout << endl;
+}
+
+void Print_mset(multiset <int> st)
+{
+
+  cout << " Mset size = " << st.size() << endl;
+  cout << " The values are" << endl;
+  for (auto c: st)
+    cout << c << endl;
+
+  cout << endl;
 }
 
 int Different_ways( Dots* dots, int current, int fx , int fy)
@@ -104,12 +160,17 @@ int Different_ways( Dots* dots, int current, int fx , int fy)
   return retval;
 }
 
-bool dfs (Dots* dots, int current, stack<int>& st, int fx , int fy)
+bool dfs (Dots* dots, int current, stack<int>& st,
+          multiset<int>& set, int fx , int fy)
 {
-  int Can_move_on = 0;
-  dots[current].visited++;
+  bool ret_needed = false;
+  for (auto c: set)
+  {
+    if (set.count(c) >= 2)
+      ret_needed = true;
+  }
   
-  if (dots[current].visited > 1)
+  if (ret_needed) 
     return true;
 
   if (Different_ways(dots, current, fx , fy) <= 1)
@@ -122,13 +183,28 @@ bool dfs (Dots* dots, int current, stack<int>& st, int fx , int fy)
     }
   }
   else
+  {  
+    set.insert(current);
     st.push(current);
+  }
+
+  dots[current].visited++;
   
+  //up-right direction
+  if ( (( current + 1) % fx != 0) && ( current - fx >= 0 )
+     && (dots[current + 1 - fx].exist == true)
+     && (dots[current + 1 - fx].is_deadend == false))
+  {
+    if (dots[current + 1 - fx].visited == false)
+      dfs(dots, current + 1 - fx, st, set, fx, fy);
+  }
+
   // right direction
   if (((current + 1) % fx != 0) && (dots[current + 1].exist == true)
     && (dots[current + 1].is_deadend == false))
   {                  
-    dfs(dots, current + 1, st, fx, fy);  
+    if (dots[current + 1].visited == false)
+      dfs(dots, current + 1, st, set, fx, fy);
   }
 
   //down-right direction  
@@ -136,14 +212,16 @@ bool dfs (Dots* dots, int current, stack<int>& st, int fx , int fy)
      && (dots[current + 1 + fx].exist == true)
      && (dots[current + 1 + fx].is_deadend == false))   
   {
-    dfs(dots, current + 1 + fx, st, fx, fy);      
+    if (dots[current + 1 + fx].visited == false)
+      dfs(dots, current + 1 + fx, st, set, fx, fy);  
   }
 
   // down direction
   if (( current + fx < fx * fy ) && (dots[current + fx].exist == true)
     && (dots[current + fx].is_deadend == false))
   { 
-    dfs(dots, current + fx, st, fx, fy);  
+    if (dots[current + fx].visited == false)
+      dfs(dots, current + fx, st, set, fx, fy);
   }
 
   //down-left direction
@@ -151,14 +229,16 @@ bool dfs (Dots* dots, int current, stack<int>& st, int fx , int fy)
      && (dots[current - 1 + fx].exist == true)
      && (dots[current - 1 + fx].is_deadend == false))
   { 
-    dfs(dots, current - 1 + fx, st, fx, fy);  
+    if (dots[current - 1 + fx].visited == false)
+      dfs(dots, current - 1 + fx, st, set, fx, fy); 
   }
 
   // left direction
   if ( ( current % fx != 0) && (dots[current - 1].exist == true)
     && (dots[current - 1].is_deadend == false))
   {  
-    dfs(dots, current - 1, st, fx, fy);  
+    if (dots[current - 1].visited == false)
+      dfs(dots, current - 1, st, set, fx, fy);  
   }
 
   //up-left direction 
@@ -166,25 +246,174 @@ bool dfs (Dots* dots, int current, stack<int>& st, int fx , int fy)
      && (dots[current - 1 - fx].exist == true)
      && (dots[current - 1 - fx].is_deadend == false))
   {
-    dfs(dots, current - 1 - fx, st, fx, fy);  
+    if (dots[current - 1 - fx].visited == false)
+      dfs(dots, current - 1 - fx, st, set, fx, fy); 
   }
 
   // up diterction
   if (( current - fx >= 0) && (dots[current - fx].exist == true)
     && (dots[current - fx].is_deadend == false))                                        
   { 
-    dfs(dots, current - fx, st, fx, fy);  
-  }  
+    if (dots[current - fx].visited == false)
+      dfs(dots, current - fx, st, set, fx, fy);
+  }
 
   //up-right direction
   if ( (( current + 1) % fx != 0) && ( current - fx >= 0 )
      && (dots[current + 1 - fx].exist == true)
      && (dots[current + 1 - fx].is_deadend == false))
   {
-    dfs(dots, current + 1 - fx, st, fx, fy);
+    if (dots[current + 1 - fx].visited == true)
+     set.insert(current + 1 - fx);
   }
 
+  // right direction
+  if (((current + 1) % fx != 0) && (dots[current + 1].exist == true)
+    && (dots[current + 1].is_deadend == false))
+  {                  
+    if (dots[current + 1].visited == false)
+     set.insert(current + 1);
+  }
+
+  //down-right direction  
+  if ( (( current + 1) % fx != 0) && ( current + fx < fx * fy )
+     && (dots[current + 1 + fx].exist == true)
+     && (dots[current + 1 + fx].is_deadend == false))   
+  {
+    if (dots[current + 1 + fx].visited == true)
+     set.insert(current + 1 + fx);   
+  }
+
+  // down direction
+  if (( current + fx < fx * fy ) && (dots[current + fx].exist == true)
+    && (dots[current + fx].is_deadend == false))
+  { 
+    if (dots[current + fx].visited == true)
+     set.insert(current + fx); 
+  }
+
+  //down-left direction
+  if (( current % fx != 0) && ( current + fx < fx * fy )
+     && (dots[current - 1 + fx].exist == true)
+     && (dots[current - 1 + fx].is_deadend == false))
+  { 
+    if (dots[current - 1 + fx].visited == true)
+     set.insert(current - 1 + fx); 
+  }
+
+  // left direction
+  if ( ( current % fx != 0) && (dots[current - 1].exist == true)
+    && (dots[current - 1].is_deadend == false))
+  {  
+    if (dots[current - 1].visited == true)
+     set.insert(current - 1);  
+  }
+
+  //up-left direction 
+  if ( ( current % fx != 0) && ( current - fx >= 0)
+     && (dots[current - 1 - fx].exist == true)
+     && (dots[current - 1 - fx].is_deadend == false))
+  {
+    if (dots[current - 1 - fx].visited == true)
+     set.insert(current - 1 - fx);  
+  }
+
+  // up diterction
+  if (( current - fx >= 0) && (dots[current - fx].exist == true)
+    && (dots[current - fx].is_deadend == false))                                        
+  { 
+    if (dots[current - fx].visited == true)
+     set.insert(current - fx); 
+  }    
+
   return false;
+}
+
+void GetCycle (vector <int>& v, Dots* dots, int current, int fx, int fy)
+{
+  cout << "Entered" << endl;
+  dots[current].visited++;
+  v.push_back(current);
+  
+  if (  dots[current].visited > 2)
+    return;
+  
+  //up-right direction
+  if ( (( current + 1) % fx != 0) && ( current - fx >= 0 )
+     && (dots[current + 1 - fx].exist == true)
+     && (dots[current + 1 - fx].is_deadend == false)
+     && (dots[current + 1 - fx].visited == 1))
+  {
+    //v.push_back(current + 1 - fx);
+    GetCycle(v, dots, current + 1 - fx, fx, fy);
+  }
+
+  // right direction
+  if (((current + 1) % fx != 0) && (dots[current + 1].exist == true)
+    && (dots[current + 1].is_deadend == false)
+    && (dots[current + 1].visited == 1))
+  {      
+    //v.push_back(current + 1);            
+    GetCycle(v, dots, current + 1, fx, fy);
+  }
+
+  //down-right direction  
+  if ( (( current + 1) % fx != 0) && ( current + fx < fx * fy )
+     && (dots[current + 1 + fx].exist == true)
+     && (dots[current + 1 + fx].is_deadend == false)
+     && (dots[current + 1 + fx].visited == 1))   
+  {
+    //v.push_back(current + 1 + fx);
+    GetCycle(v, dots, current + 1 + fx, fx, fy);  
+  }
+
+  // down direction
+  if (( current + fx < fx * fy ) && (dots[current + fx].exist == true)
+    && (dots[current + fx].is_deadend == false)
+    && (dots[current + fx].visited == 1))
+  { 
+    //v.push_back(current + fx);
+    GetCycle(v, dots, current + fx, fx, fy);
+  }
+
+  //down-left direction
+  if (( current % fx != 0) && ( current + fx < fx * fy )
+     && (dots[current - 1 + fx].exist == true)
+     && (dots[current - 1 + fx].is_deadend == false)
+     && (dots[current - 1 + fx].visited == 1))
+  { 
+    //v.push_back(current - 1 + fx);
+    GetCycle(v, dots, current - 1 + fx, fx, fy); 
+  }
+
+  // left direction
+  if ( ( current % fx != 0) && (dots[current - 1].exist == true)
+    && (dots[current - 1].is_deadend == false)
+    && (dots[current - 1].visited == 1))
+  { 
+    //v.push_back(current - 1); 
+    GetCycle(v, dots, current - 1, fx, fy);  
+  }
+
+  //up-left direction 
+  if ( ( current % fx != 0) && ( current - fx >= 0)
+     && (dots[current - 1 - fx].exist == true)
+     && (dots[current - 1 - fx].is_deadend == false)
+     && (dots[current - 1 - fx].visited == 1))
+  {
+    //v.push_back(current - 1 - fx);
+    GetCycle(v, dots, current - 1 - fx, fx, fy); 
+  }
+
+  // up diterction
+  if (( current - fx >= 0) && (dots[current - fx].exist == true)
+    && (dots[current - fx].is_deadend == false)
+    &&(dots[current - fx].visited == 1))                                        
+  {   
+    //v.push_back(current - fx);
+    GetCycle(v, dots, current - fx, fx, fy);
+  }
+
 }
 
 void FindContour (Dots* dots, int fx, int fy)
@@ -197,14 +426,24 @@ void FindContour (Dots* dots, int fx, int fy)
     return;
 
   stack <int> st;
-
+  multiset <int> set;
   int current = nnvisited;
 
 
-  cout << std::boolalpha << dfs(dots, current, st, fx, fy)
-    << endl;
+  dfs(dots, current, st, set, fx, fy);
+  vector <int> cycle;
+  
+  if (!st.empty())
+    GetCycle (cycle, dots, st.top(), fx, fy);
+
+  cout << "Cycle size= " << cycle.size() << endl;
+
+  for (int i = 0; i < cycle.size(); i++)
+    cout << cycle[i] << endl;
+  cout << "Cycle ends" << endl;
 
   Print_stack(st);
+  Print_mset(set);
 }
 
 void MoveBoard(int fx, int fy)
@@ -388,7 +627,7 @@ void EnumerateField(int dot_clmns, int dot_rows, TTF_Font *my_Font)
   char* num;
   rectangle4.w = intrv * 1.5;
   rectangle4.h = intrv * 1.5;
-      
+
   for (int number = 0; number < dot_rows; number += 5)
   {
     num_str = to_string(number);
@@ -605,341 +844,31 @@ bool operator==(SDL_Color a, SDL_Color b)
     return false;
 }
 
-int main(int argc, char *argv[])
+void MainMenu()
 {
-  using std::cout;
-  using std::cin;
-  using std::endl;
-  using std::max;
-  using std::to_string;
-  using std::string;
-  using std::pair;
-
-///////////////////////////////Finding out display parameters///////////////////
-  #if __linux__
-  char *wid; Display *dpy; Window w;
-  if(!(dpy = XOpenDisplay(0)))
-    errx(1, "cannot open display '%s'", XDisplayName(0));
-  int snum = DefaultScreen(dpy);
-  ScWidth = DisplayWidth(dpy, snum);
-  ScHeight = DisplayHeight(dpy, snum);
-  cout << "Device screen width: " << ScWidth << ", Device screen height: "
-       << ScHeight << endl;
-  #endif
-
-  #if _WIN32
-    GetDesktopResolution(ScWidth, ScHeight);
-    cout << ScWidth << '\n' << ScHeight << '\n';
-  #endif     
-////////////////////////////////////////////////////////////////////////////////
-
-
-/////////////////////////////////////Some variables/////////////////////////////
-  SDL_Color white = {255, 255, 255, 255};
-  cur_color = white;
-  Mouse mouse;
-  mouse.GiveColor(white);
-  mouse.circle_size = 6;
-
-  const int vo = ScHeight / 8;  //vertical offset
-  const int ho = ScWidth / 5;  //horizontal offset
-  uint8_t pa_back = 1;
-  bool dots_conqured_victory = false;
-  
-  const int dots_menu_size = int(field_x_base + 2) * int(field_y_base + 2);
-  Dots dots[dots_menu_size];
-
-  for (int i = 0; i < dots_menu_size; i++)
-  {
-    dots[i].exist = false;
-    dots[i].clr = white;
-  }
-
-  int game_x_size = 30;
-  int game_y_size = 30;
-
-  int field_x_credits = 50;
-  int field_y_credits = 100;
-  int dots_credits_size = (field_y_credits + 2) * (field_x_credits + 2);
-  Dots *dots_c = new Dots[dots_credits_size];
-  for (int i = 0; i < dots_credits_size; i++)
-    dots_c[i].exist = false;
-////////////////////////////////////////////////////////////////////////////////
-
-
-/////////////////////////////////////Initializing SDL///////////////////////////
-  window = SDL_CreateWindow("Dots", 0, 0, ScWidth, ScHeight,
-    SDL_WINDOW_FULLSCREEN);
-  renderer = SDL_CreateRenderer(window, -1, SDL_RENDERER_ACCELERATED); 
-
-  if (SDL_Init(SDL_INIT_VIDEO) < 0)
-  {
-    SDL_LogError(SDL_LOG_CATEGORY_APPLICATION, "Couldn't initialize SDL: %s",
-      SDL_GetError());
-    return 3;
-  }
-//////////////////////////////////////////////////////////////////////////////// 
-
-
-//////////////////////////////SDL_TTF for GSM///////////////////////////////////
-  if (TTF_Init() == -1)
-    cout << "Could not initialize SDL2_ttf, error:" << TTF_GetError() << endl;
-  else
-    cout << "SDL2_ttf system ready to go!";
-
-  TTF_Font* my_Font = TTF_OpenFont("DroidSans.ttf", 32);
-  if (my_Font == nullptr)
-  {
-    cout << "could not load font" << endl;
-    exit(1);
-  }
-
-  string temp_str = to_string(field_x_size);
-  char* field_x = (char*) temp_str.c_str();
-  int rectangle_w = ScWidth / 32;
-  int rectangle_h = ScWidth / 18;
-  SDL_Surface* surfaceText = TTF_RenderText_Solid(my_Font, field_x,
-    {255, 255, 0});
-  SDL_Texture* textureText = 
-    SDL_CreateTextureFromSurface(renderer, surfaceText);
-  SDL_Rect rectangle;
-  rectangle.w = rectangle_w * 2;
-  rectangle.h = rectangle_h * 2;
-  rectangle.x = ScWidth * 1 / 3 - rectangle.w / 2;
-  rectangle.y = vo * 3;
-
-  temp_str = to_string(field_y_size);
-  char* field_y = (char*) temp_str.c_str();
-  SDL_Surface* surfaceText2 = TTF_RenderText_Solid(my_Font, field_y,
-    {255, 255, 0});
-  SDL_Texture* textureText2 = SDL_CreateTextureFromSurface
-    (renderer, surfaceText2);
-  SDL_Rect rectangle2;
-  rectangle2.w = rectangle_w * 2;
-  rectangle2.h = rectangle_h * 2;
-  rectangle2.x = ScWidth * 2 / 3 - rectangle2.w / 2;
-  rectangle2.y = vo * 3;
-
-  SDL_Surface* surfaceText3 = TTF_RenderText_Solid(my_Font, "x",
-    {255, 255, 0});
-  SDL_Texture* textureText3 =
-    SDL_CreateTextureFromSurface(renderer, surfaceText3);
-  SDL_FreeSurface(surfaceText3);
-  SDL_Rect rectangle3;
-
-  rectangle3.w = rectangle_w * 2;
-  rectangle3.h = rectangle_h * 2;
-  rectangle3.x = ScWidth * 1 / 2 - rectangle3.w / 2;
-  rectangle3.y = vo * 3;
-//////////////////////////////////////////////////////////////////////////////// 
-
-
-/////////////////All buttons and labels are here////////////////////////////////  
-  const char* New = "images/new.png";
-  Button NewButton(New, ho, vo, 100, 400);
-  NewButton.srect.y = 0;
-  NewButton.drect.x = ScWidth / 2 - NewButton.drect.w / 2; 
-  NewButton.drect.y = vo;
-
-  const char* load = "images/load.png";
-  Button loadButton(load, ho, vo, 100, 400);
-  loadButton.srect.y = 0;
-  loadButton.drect.x = ScWidth / 2 - loadButton.drect.w / 2; 
-  loadButton.drect.y = vo * 2;
-
-  const char* helpB = "images/help.png";
-  Button helpButton(helpB, ho, vo, 100, 400);
-  helpButton.srect.y = 0;
-  helpButton.drect.x = ScWidth / 2 - helpButton.drect.w / 2; 
-  helpButton.drect.y = vo * 3;
-
-  const char* credits = "images/credits.png";
-  Button creditsButton(credits, ho, vo, 100, 400);
-  creditsButton.srect.y = 0;
-  creditsButton.drect.x = ScWidth / 2 - creditsButton.drect.w / 2; 
-  creditsButton.drect.y = vo * 4;
-
-  const char* exitB = "images/exit.png";
-  Button exitButton(exitB, ho, vo, 100, 400);
-  exitButton.srect.y = 0;
-  exitButton.drect.x = ScWidth / 2 - exitButton.drect.w / 2; 
-  exitButton.drect.y = vo * 5;
-
-  const char* paB = "images/pa.png";
-  Label paLabel(paB, ho * 1.5, vo, 100, 600);
-  paLabel.srect.y = 0;
-  paLabel.drect.x = ScWidth / 2 - paLabel.drect.w / 2; 
-  paLabel.drect.y = vo;
-
-  const char* oneB = "images/one.png";
-  Button oneButton(oneB, ho, vo, 100, 200);
-  oneButton.srect.y = 0;
-  oneButton.drect.x = ScWidth / 2 - oneButton.drect.w / 2; 
-  oneButton.drect.y = vo * 2;
-
-  const char* twoB = "images/two.png";
-  Button twoButton(twoB, ho, vo, 100, 400);
-  twoButton.srect.y = 0;
-  twoButton.drect.x = ScWidth / 2 - twoButton.drect.w / 2; 
-  twoButton.drect.y = vo * 3;
-
-  const char* threeB = "images/three.png";
-  Button threeButton(threeB, ho, vo, 100, 400);
-  threeButton.srect.y = 0;
-  threeButton.drect.x = ScWidth / 2 - threeButton.drect.w / 2; 
-  threeButton.drect.y = vo * 4;
-
-  const char* fourB = "images/four.png";
-  Button fourButton(fourB, ho, vo, 100, 400);
-  fourButton.srect.y = 0;
-  fourButton.drect.x = ScWidth / 2 - fourButton.drect.w / 2; 
-  fourButton.drect.y = vo * 5;
-
-  const char* backB = "images/back.png";
-  Button backButton(backB, ho, vo, 100, 400);
-  backButton.srect.y = 0;
-  backButton.drect.x = ScWidth / 2 - backButton.drect.w / 2; 
-  backButton.drect.y = vo * 6;
-
-  const char* gvaiL = "images/GVAI.png";
-  Label gvaiLabel(gvaiL, ho * 1.5, vo, 100, 600);
-  gvaiLabel.srect.y = 0;
-  gvaiLabel.drect.x = ScWidth / 2 - gvaiLabel.drect.w / 2; 
-  gvaiLabel.drect.y = vo;
-
-  const char* udL = "images/ud.png";
-  Label udLabel(udL, ho * 1.5, vo, 100, 600);
-  udLabel.srect.y = 0;
-  udLabel.drect.x = ScWidth / 2 - udLabel.drect.w / 2; 
-  udLabel.drect.y = vo * 2;
-
-  Button back2Button(backB, ho, vo, 100, 400);
-  back2Button.srect.y = 0;
-  back2Button.drect.x = ScWidth / 2 - back2Button.drect.w / 2; 
-  back2Button.drect.y = vo * 6;
-
-  Button back3Button(backB, ho, vo, 100, 400);
-  back3Button.srect.y = 0;
-  back3Button.drect.x = ScWidth / 2 - back3Button.drect.w / 2; 
-  back3Button.drect.y = vo * 6;
-
-  const char* continueB = "images/continue.png";
-  Button continueButton(continueB, ho, vo, 100, 400);
-  continueButton.srect.y = 0;
-  continueButton.drect.x = ScWidth / 2 - continueButton.drect.w / 2; 
-  continueButton.drect.y = vo * 5;
-
-  const char* sgL = "images/sg.png";
-  Label sgLabel(sgL, ho * 1.5, vo, 100, 600);
-  sgLabel.srect.y = 0;
-  sgLabel.drect.x = ScWidth / 2 - sgLabel.drect.w / 2; 
-  sgLabel.drect.y = vo;
-
-  const char* colorsL = "images/colors.png";
-  Label colorsLabel(colorsL, ho * 1.5, vo, 100, 600);
-  colorsLabel.srect.y = 0;
-  colorsLabel.drect.x = ScWidth / 2 - colorsLabel.drect.w / 2; 
-  colorsLabel.drect.y = vo * 2;
-
-  const char* rgbL = "images/rgb.png";
-  Label rgbLabel(rgbL, ho * 1.5, vo, 100, 600);
-  rgbLabel.srect.y = 0;
-  rgbLabel.drect.x = ScWidth / 2 - rgbLabel.drect.w / 2; 
-  rgbLabel.drect.y = vo * 3;
-
-  ColorButton P21(25, 170, 100);
-  P21.rect.x = ScWidth / 3 - P21.rect.w / 2; 
-  P21.rect.y = vo * 4;
-
-  ColorButton P22(100, 0, 150);
-  P22.rect.x = ScWidth * 2 / 3 - P22.rect.w / 2; 
-  P22.rect.y = vo * 4;
-
-  ColorButton P31(255, 0, 0);
-  P31.rect.x = ScWidth / 4 - P21.rect.w / 2; 
-  P31.rect.y = vo * 4;
-
-  ColorButton P32(0, 255, 0);
-  P32.rect.x = ScWidth * 2 / 4 - P22.rect.w / 2; 
-  P32.rect.y = vo * 4;
-
-  ColorButton P33(0, 0, 255);
-  P33.rect.x = ScWidth * 3 / 4 - P22.rect.w / 2; 
-  P33.rect.y = vo * 4;
-
-  ColorButton P41(0, 255, 10);
-  P41.rect.x = ScWidth * 1 / 5 - P22.rect.w / 2; 
-  P41.rect.y = vo * 4;
-
-  ColorButton P42(255, 10, 0);
-  P42.rect.x = ScWidth * 2 / 5 - P21.rect.w / 2; 
-  P42.rect.y = vo * 4;
-
-  ColorButton P43(0, 10, 255);
-  P43.rect.x = ScWidth * 3 / 5 - P22.rect.w / 2; 
-  P43.rect.y = vo * 4;
-
-  ColorButton P44(240, 240, 0);
-  P44.rect.x = ScWidth * 4 / 5 - P22.rect.w / 2; 
-  P44.rect.y = vo * 4;
-
-  const char* sgsL = "images/sgs.png";
-  Label sgsLabel(sgsL, ho * 1.5, vo, 100, 600);
-  sgsLabel.srect.y = 0;
-  sgsLabel.drect.x = ScWidth / 2 - sgsLabel.drect.w / 2; 
-  sgsLabel.drect.y = vo; 
-
-  const char* useL = "images/use.png";
-  Label useLabel(useL, ho * 1.5, vo, 100, 600);
-  useLabel.srect.y = 0;
-  useLabel.drect.x = ScWidth / 2 - useLabel.drect.w / 2; 
-  useLabel.drect.y = vo * 2;
-
-  const char* sgrL = "images/sgr.png";
-  Label sgrLabel(sgrL, ho * 1.5, vo, 100, 600);
-  sgrLabel.srect.y = 0;
-  sgrLabel.drect.x = ScWidth / 2 - sgrLabel.drect.w / 2; 
-  sgrLabel.drect.y = vo;
-
-  const char* dcw = "images/dcw.png";
-  Button dcwButton(dcw, ho * 4.5, vo, 100, 900);
-  dcwButton.srect.y = 0;
-  dcwButton.drect.x = ScWidth / 2 - dcwButton.drect.w / 2; 
-  dcwButton.drect.y = vo * 3;
-
-  const char* tvB = "images/tv.png";
-  Button tvButton(tvB, ho * 3.5, vo, 100, 700);
-  tvButton.srect.y = 0;
-  tvButton.drect.x = ScWidth / 2 - tvButton.drect.w / 2; 
-  tvButton.drect.y = vo * 4;   
-////////////////////////////////////////////////////////////////////////////////
-
-
-///////////////////////////////////Menu cycle///////////////////////////////////
-  Menu:
-  NewButton.keytrick = false;
-  exitButton.keytrick = false;
-  creditsButton.keytrick = false;
-  helpButton.keytrick = false;
-  loadButton.keytrick = false;
+  ButtonVector[0].keytrick = false;
+  ButtonVector[4].keytrick = false;
+  ButtonVector[3].keytrick = false;
+  ButtonVector[2].keytrick = false;
+  ButtonVector[1].keytrick = false;
 
   for (int i = 0; i < dots_menu_size; i++)
     dots[i].exist = false;
   
-  while (1)
+  while (GameState == Menu)
   { 
     mouse.Update();
-    NewButton.Update(mouse);
-    loadButton.Update(mouse);
-    helpButton.Update(mouse);    
-    exitButton.Update(mouse);
-    creditsButton.Update(mouse);
+    ButtonVector[0].Update(mouse);
+    ButtonVector[1].Update(mouse);
+    ButtonVector[2].Update(mouse);    
+    ButtonVector[4].Update(mouse);
+    ButtonVector[3].Update(mouse);
 
     SDL_PollEvent(&event);
     if ((event.type == SDL_KEYDOWN) && (event.type == SDL_QUIT))
       exit(0);
 
-    if ( (event.button.button == SDL_BUTTON_LEFT) && (exitButton.IsSelected)
+    if ( (event.button.button == SDL_BUTTON_LEFT) && (ButtonVector[4].IsSelected)
       && (event.type == SDL_MOUSEBUTTONUP)) 
       exit(0);
 
@@ -947,27 +876,27 @@ int main(int argc, char *argv[])
       exit(0);
 
     if( (event.key.keysym.sym == SDLK_e) && (event.type == SDL_KEYDOWN) )
-      exitButton.keytrick = true;
+      ButtonVector[4].keytrick = true;
 
     if( (event.key.keysym.sym == SDLK_n) && (event.type == SDL_KEYDOWN) )
-      NewButton.keytrick = true;
+      ButtonVector[0].keytrick = true;
 
     if ( (event.key.keysym.sym == SDLK_n) && (event.type == SDL_KEYUP) )
-      goto SAP;
+      GameState = SAP;
 
-    if ( (event.button.button == SDL_BUTTON_LEFT) && (NewButton.IsSelected)
+    if ( (event.button.button == SDL_BUTTON_LEFT) && (ButtonVector[0].IsSelected)
       && (event.type == SDL_MOUSEBUTTONUP)) 
-      goto SAP;
+      GameState = SAP;
 
     if( (event.key.keysym.sym == SDLK_c) && (event.type == SDL_KEYDOWN) )
-      creditsButton.keytrick = true;
+      ButtonVector[3].keytrick = true;
 
     if ( (event.key.keysym.sym == SDLK_c) && (event.type == SDL_KEYUP) )
-      goto Credits;
+      GameState = Credits;
 
-    if ( (event.button.button == SDL_BUTTON_LEFT) && (creditsButton.IsSelected)
+    if ( (event.button.button == SDL_BUTTON_LEFT) && (ButtonVector[3].IsSelected)
       && (event.type == SDL_MOUSEBUTTONUP)) 
-      goto Credits;
+      GameState = Credits;
 
     SDL_GetMouseState(&xMouse,&yMouse);
     GetDotInput(dots, cur_color, field_x_base, field_y_base);
@@ -989,27 +918,29 @@ int main(int argc, char *argv[])
     }
     FindContour(dots, field_x_base, field_y_base);
     
-    NewButton.Draw();
-    loadButton.Draw();
-    helpButton.Draw();
-    exitButton.Draw();
-    creditsButton.Draw();
+    ButtonVector[0].Draw();
+    ButtonVector[1].Draw();
+    ButtonVector[2].Draw();
+    ButtonVector[4].Draw();
+    ButtonVector[3].Draw();
     mouse.DrawCircle(cur_color);
 
     SDL_RenderPresent(renderer);
   }
-////////////////////////////////////////////////////////////////////////////////
+}
 
+void CreditsMenu()
+{
+  for (int i = 0; i < dots_credits_size; i++)
+    dots_c[i].exist = false;
 
-//////////////////////////////Credits///////////////////////////////////////////
-  Credits: 
-  backButton.keytrick = false;
+  ButtonVector[9].keytrick = false;
   x_c = 0;
   y_c = 0;
   
   while (1)
   {
-    backButton.Update(mouse);
+    ButtonVector[9].Update(mouse);
     mouse.Update();
 
     SDL_PollEvent(&event);
@@ -1017,19 +948,28 @@ int main(int argc, char *argv[])
       exit(0);
 
     if ((event.key.keysym.sym == SDLK_ESCAPE) && (event.type == SDL_KEYUP) )
-      goto Menu;
+    {
+      GameState = Menu;
+      return;
+    }
 
-    if ( (event.button.button == SDL_BUTTON_LEFT) && (backButton.IsSelected)
+    if ( (event.button.button == SDL_BUTTON_LEFT) && (ButtonVector[9].IsSelected)
       && (event.type == SDL_MOUSEBUTTONUP)) 
-      goto Menu;
+    {
+      GameState = Menu;
+      return;
+    }
 
     if( (event.key.keysym.sym == SDLK_b) && (event.type == SDL_KEYDOWN) )
-      backButton.keytrick = true;
+      ButtonVector[9].keytrick = true;
 
     if ( (event.key.keysym.sym == SDLK_b) && (event.type == SDL_KEYUP) )
-      goto Menu;
+    {
+      GameState = Menu;
+      return;
+    }
 
-    SDL_GetMouseState(&xMouse,&yMouse);
+    SDL_GetMouseState(&xMouse, &yMouse);
     GetDotInput(dots_c, cur_color, field_x_credits, field_y_credits);
     GetDotErase(dots_c, field_x_credits, field_y_credits);
     SDL_SetRenderDrawColor(renderer, red_default, green_default,
@@ -1039,92 +979,124 @@ int main(int argc, char *argv[])
     MoveBoard(field_x_credits, field_y_credits);
 
     DrawField(field_x_credits, field_y_credits);
-    DrawDots(dots_c, dots_menu_size, field_x_credits);
+    DrawDots(dots_c, dots_credits_size, field_x_credits);
     EnumerateField(field_y_credits, field_x_credits, my_Font);
     Zoom();
     mouse.DrawCircle(cur_color);
     FillCredits(my_Font);
 
-    backButton.Draw();
+    ButtonVector[9].Draw();
     SDL_RenderPresent(renderer);
   }
-///////////////////////////////////////////////////////////////////////////////
+}
 
-
-/////////////////////////////Select amount of players menu//////////////////////
-  SAP:
-  backButton.keytrick = false;
-  oneButton.keytrick = false;
-  twoButton.keytrick = false;
-  threeButton.keytrick = false;
-  fourButton.keytrick = false;
+void SelectAmountOfPlayersMenu()
+{
+  ButtonVector[9].keytrick = false;
+  ButtonVector[5].keytrick = false;
+  ButtonVector[6].keytrick = false;
+  ButtonVector[7].keytrick = false;
+  ButtonVector[8].keytrick = false;
   for (int i = 0; i < dots_menu_size; i++)
     dots[i].exist = false;
 
   while (1)
   {
-    backButton.Update(mouse);
-    oneButton.Update(mouse);
-    twoButton.Update(mouse);
-    threeButton.Update(mouse);
-    fourButton.Update(mouse);
+    ButtonVector[9].Update(mouse);
+    ButtonVector[5].Update(mouse);
+    ButtonVector[6].Update(mouse);
+    ButtonVector[7].Update(mouse);
+    ButtonVector[8].Update(mouse);
     mouse.Update();
     SDL_PollEvent(&event);
     if (event.type == SDL_KEYDOWN && event.type == SDL_QUIT)
       exit(0);
 
-    if ( (event.button.button == SDL_BUTTON_LEFT) && (backButton.IsSelected)
+    if ( (event.button.button == SDL_BUTTON_LEFT) && (ButtonVector[9].IsSelected)
       && (event.type == SDL_MOUSEBUTTONUP)) 
-      goto Menu;
+    {
+      GameState = Menu;
+      return;
+    }
 
     if( (event.key.keysym.sym == SDLK_b) && (event.type == SDL_KEYDOWN) )
-      backButton.keytrick = true;
+      ButtonVector[9].keytrick = true;
 
     if ( (event.key.keysym.sym == SDLK_b) && (event.type == SDL_KEYUP) )
-      goto Menu;
+    {
+      GameState = Menu;
+      return;
+    }
 
     if ((event.key.keysym.sym == SDLK_ESCAPE) && (event.type == SDL_KEYUP) )
-      goto Menu;
+    {
+      GameState = Menu;
+      return;
+    }
 
-    if ( (event.button.button == SDL_BUTTON_LEFT) && (oneButton.IsSelected) 
+    if ( (event.button.button == SDL_BUTTON_LEFT) && (ButtonVector[5].IsSelected) 
       && (event.type == SDL_MOUSEBUTTONUP))
-      goto OPM;
+    {
+      GameState = ONEPM;
+      return;
+    }
 
     if ( (event.key.keysym.sym == SDLK_1) && (event.type == SDL_KEYUP) )
-      goto OPM;
+    {
+      GameState = ONEPM;
+      return;
+    }
 
     if( (event.key.keysym.sym == SDLK_1) && (event.type == SDL_KEYDOWN) )
-      oneButton.keytrick = true;
+      ButtonVector[5].keytrick = true;
 
-    if ( (event.button.button == SDL_BUTTON_LEFT) && (twoButton.IsSelected) 
+    if ( (event.button.button == SDL_BUTTON_LEFT) && (ButtonVector[6].IsSelected) 
       && (event.type == SDL_MOUSEBUTTONUP))  
-      goto TWOPM;
+    {
+      GameState = TWOPM;
+      return;
+    }
 
     if ( (event.key.keysym.sym == SDLK_2) && (event.type == SDL_KEYUP) )
-      goto TWOPM;
+    {
+      GameState = TWOPM;
+      return;
+    }
 
     if( (event.key.keysym.sym == SDLK_2) && (event.type == SDL_KEYDOWN) )
-      twoButton.keytrick = true;
+      ButtonVector[6].keytrick = true;
 
-    if ( (event.button.button == SDL_BUTTON_LEFT) && (threeButton.IsSelected)
+    if ( (event.button.button == SDL_BUTTON_LEFT) && (ButtonVector[7].IsSelected)
       && (event.type == SDL_MOUSEBUTTONUP))
-      goto THPM;
+    {
+      GameState = THREEPM;
+      return;
+    }
 
     if ( (event.key.keysym.sym == SDLK_3) && (event.type == SDL_KEYUP) )
-      goto THPM;
+    {
+      GameState = THREEPM;
+      return;
+    }
 
     if( (event.key.keysym.sym == SDLK_3) && (event.type == SDL_KEYDOWN) )
-      threeButton.keytrick = true;
+      ButtonVector[7].keytrick = true;
 
-    if ( (event.button.button == SDL_BUTTON_LEFT) && (fourButton.IsSelected)
+    if ( (event.button.button == SDL_BUTTON_LEFT) && (ButtonVector[8].IsSelected)
       && (event.type == SDL_MOUSEBUTTONUP)) 
-      goto FPM;
+    {
+      GameState = FOURPM;
+      return;
+    }
 
     if ( (event.key.keysym.sym == SDLK_4) && (event.type == SDL_KEYUP) )
-      goto FPM;
+    {
+      GameState = FOURPM;
+      return;
+    }
 
     if( (event.key.keysym.sym == SDLK_4) && (event.type == SDL_KEYDOWN) )
-      fourButton.keytrick = true;
+      ButtonVector[8].keytrick = true;
 
     SDL_GetMouseState(&xMouse,&yMouse);
     GetDotInput(dots, cur_color, field_x_base, field_y_base);
@@ -1139,45 +1111,52 @@ int main(int argc, char *argv[])
     Zoom();
     EnumerateField(field_y_base, field_x_base, my_Font);
 
-    paLabel.Draw();
-    backButton.Draw();
-    oneButton.Draw();
-    twoButton.Draw();
-    threeButton.Draw();
-    fourButton.Draw();
+    LabelVector[0].Draw();
+    ButtonVector[9].Draw();
+    ButtonVector[5].Draw();
+    ButtonVector[6].Draw();
+    ButtonVector[7].Draw();
+    ButtonVector[8].Draw();
     mouse.DrawCircle(cur_color);
     
     SDL_RenderPresent(renderer);
   }
-////////////////////////////////////////////////////////////////////////////////
+}  
 
-
-///////////////////////////////////////One player menu//////////////////////////
-  OPM:
-  back2Button.keytrick = false;
+void OnePlayerMenu()
+{
+  ButtonVector[10].keytrick = false;
   for (int i = 0; i < dots_menu_size; i++)
     dots[i].exist = false;
 
   while (1)
   {
-    back2Button.Update(mouse);
+    ButtonVector[10].Update(mouse);
     mouse.Update();
     SDL_PollEvent(&event);
     if (event.type == SDL_KEYDOWN && event.type == SDL_QUIT)
       exit(0);
 
     if (event.key.keysym.sym == SDLK_ESCAPE)
-      goto Menu;
-
+    {
+      GameState = Menu;
+      return;
+    }
     if( (event.key.keysym.sym == SDLK_b) && (event.type == SDL_KEYDOWN) )
-      back2Button.keytrick = true;
+      ButtonVector[10].keytrick = true;
 
     if ( (event.key.keysym.sym == SDLK_b) && (event.type == SDL_KEYUP) )
-      goto SAP;
+    {
+      GameState = SAP;
+      return;
+    }
 
-    if ( (back2Button.IsSelected) && (event.button.button == SDL_BUTTON_LEFT)
+    if ( (ButtonVector[10].IsSelected) && (event.button.button == SDL_BUTTON_LEFT)
        && (event.type == SDL_MOUSEBUTTONUP))
-      goto SAP;
+    {
+      GameState = SAP;
+      return;
+    }
     
     SDL_GetMouseState(&xMouse,&yMouse);
 
@@ -1192,28 +1171,27 @@ int main(int argc, char *argv[])
     EnumerateField(field_y_base, field_x_base, my_Font);
     Zoom();
 
-    gvaiLabel.Draw();
-    udLabel.Draw();
-    back2Button.Draw();
+    LabelVector[1].Draw();
+    LabelVector[2].Draw();
+    ButtonVector[10].Draw();
     mouse.DrawCircle(cur_color);
     
     SDL_RenderPresent(renderer);
   }
-////////////////////////////////////////////////////////////////////////////////
+}
 
-
-///////////////////////////////////////Two player menu//////////////////////////
-  TWOPM:
-  back2Button.keytrick = false;
-  continueButton.keytrick = false;
+void TwoPlayerMenu()
+{
+  ButtonVector[10].keytrick = false;
+  ButtonVector[12].keytrick = false;
   for (int i = 0; i < dots_menu_size; i++)
     dots[i].exist = false;
 
   while (1)
   {
     mouse.Update();
-    continueButton.Update(mouse);
-    back2Button.Update(mouse);
+    ButtonVector[12].Update(mouse);
+    ButtonVector[10].Update(mouse);
     P21.Update(mouse);
     P22.Update(mouse);
     SDL_PollEvent(&event);
@@ -1221,32 +1199,40 @@ int main(int argc, char *argv[])
       exit(0);
 
     if (event.type == SDL_KEYDOWN && event.key.keysym.sym == SDLK_ESCAPE)
-      goto Menu;
+    {
+      GameState = Menu;
+      return;
+    }
 
     if ( (event.key.keysym.sym == SDLK_b) && (event.type == SDL_KEYUP) )
-      back2Button.keytrick = false;
+      ButtonVector[10].keytrick = false;
 
     if ( (event.key.keysym.sym == SDLK_b) && (event.type == SDL_KEYDOWN) )
-      back2Button.keytrick = true;
+      ButtonVector[10].keytrick = true;
 
-    if ( (event.button.button == SDL_BUTTON_LEFT) && (back2Button.IsSelected) 
+    if ( (event.button.button == SDL_BUTTON_LEFT) && (ButtonVector[10].IsSelected) 
       && (event.type == SDL_MOUSEBUTTONUP))
-      goto SAP;
+    {
+      GameState = SAP;
+      return;
+    }
 
     if ( (event.key.keysym.sym == SDLK_c) && (event.type == SDL_KEYDOWN) )
-      continueButton.keytrick = true;
+      ButtonVector[12].keytrick = true;
 
     if ((event.key.keysym.sym == SDLK_c) && (event.type == SDL_KEYUP) )
     {
       pa_back = 2;  
-      goto GSM;
+      GameState = GSM;
+      return;
     }
 
-    if ( (event.button.button == SDL_BUTTON_LEFT) && (continueButton.IsSelected)
+    if ( (event.button.button == SDL_BUTTON_LEFT) && (ButtonVector[12].IsSelected)
       && (event.type == SDL_MOUSEBUTTONUP)) 
     {
       pa_back = 2;  
-      goto GSM;
+      GameState = GSM;
+      return;
     }
 
     if ( (!P21.IsSelected) && (!P22.IsSelected) )
@@ -1278,30 +1264,29 @@ int main(int argc, char *argv[])
 
     P21.Draw();
     P22.Draw();
-    continueButton.Draw();
-    sgLabel.Draw();
-    colorsLabel.Draw();
-    rgbLabel.Draw();
-    back2Button.Draw();
+    ButtonVector[12].Draw();
+    LabelVector[3].Draw();
+    LabelVector[4].Draw();
+    LabelVector[5].Draw();
+    ButtonVector[10].Draw();
     mouse.DrawCircle(cur_color);
     
     SDL_RenderPresent(renderer);
   }
-////////////////////////////////////////////////////////////////////////////////
+}
 
-
-//////////////////////////////////Three player menu/////////////////////////////
-  THPM:
-  back2Button.keytrick = false;
-  continueButton.keytrick = false;
+void ThreePlayerMenu()
+{
+  ButtonVector[10].keytrick = false;
+  ButtonVector[12].keytrick = false;
   for (int i = 0; i < dots_menu_size; i++)
     dots[i].exist = false;
 
   while (1)
   {
     mouse.Update();
-    continueButton.Update(mouse);
-    back2Button.Update(mouse);
+    ButtonVector[12].Update(mouse);
+    ButtonVector[10].Update(mouse);
     P31.Update(mouse);
     P32.Update(mouse);
     P33.Update(mouse);
@@ -1310,32 +1295,40 @@ int main(int argc, char *argv[])
       exit(0);
 
     if (event.type == SDL_KEYDOWN && event.key.keysym.sym == SDLK_ESCAPE)
-      goto Menu;
+    {
+      GameState = Menu;
+      return;
+    }  
 
     if ( (event.key.keysym.sym == SDLK_b) && (event.type == SDL_KEYUP) )
-      back2Button.keytrick = false;
+      ButtonVector[10].keytrick = false;
 
     if( (event.key.keysym.sym == SDLK_b) && (event.type == SDL_KEYDOWN) )
-      back2Button.keytrick = true;
+      ButtonVector[10].keytrick = true;
 
-    if ( (event.button.button == SDL_BUTTON_LEFT) && (back2Button.IsSelected)
+    if ( (event.button.button == SDL_BUTTON_LEFT) && (ButtonVector[10].IsSelected)
       && (event.type == SDL_MOUSEBUTTONUP))
-      goto SAP;
+    {
+      GameState = SAP;
+      return;
+    }  
 
     if ((event.key.keysym.sym == SDLK_c) && (event.type == SDL_KEYUP) )
     {
       pa_back = 3;  
-      goto GSM;
+      GameState = GSM;
+      return;
     }
 
     if ( (event.key.keysym.sym == SDLK_c) && (event.type == SDL_KEYDOWN) )
-      continueButton.keytrick = true;
+      ButtonVector[12].keytrick = true;
 
-    if ( (event.button.button == SDL_BUTTON_LEFT) && (continueButton.IsSelected)
+    if ( (event.button.button == SDL_BUTTON_LEFT) && (ButtonVector[12].IsSelected)
       && (event.type == SDL_MOUSEBUTTONUP)) 
     {
       pa_back = 3;  
-      goto GSM;
+      GameState = GSM;
+      return;
     }
 
     if ( (!P31.IsSelected) && (!P32.IsSelected) && (!P33.IsSelected)  )
@@ -1374,31 +1367,29 @@ int main(int argc, char *argv[])
     P31.Draw();
     P32.Draw();
     P33.Draw();
-    sgLabel.Draw();
-    colorsLabel.Draw();
-    rgbLabel.Draw();
-    back2Button.Draw();
-    continueButton.Draw();
+    LabelVector[3].Draw();
+    LabelVector[4].Draw();
+    LabelVector[5].Draw();
+    ButtonVector[10].Draw();
+    ButtonVector[12].Draw();
     mouse.DrawCircle(cur_color);
     
     SDL_RenderPresent(renderer);
   }
-////////////////////////////////////////////////////////////////////////////////
+}
 
-
-//////////////////////////////////Four player menu//////////////////////////////
-  FPM:
-  back2Button.keytrick = false;
-  continueButton.keytrick = false;
+void FourPlayerMenu()
+{
+  ButtonVector[10].keytrick = false;
+  ButtonVector[12].keytrick = false;
   for (int i = 0; i < dots_menu_size; i++)
     dots[i].exist = false;
-
 
   while (1)
   {
     mouse.Update();
-    continueButton.Update(mouse);
-    back2Button.Update(mouse);
+    ButtonVector[12].Update(mouse);
+    ButtonVector[10].Update(mouse);
     P41.Update(mouse);
     P42.Update(mouse);
     P43.Update(mouse);
@@ -1409,32 +1400,40 @@ int main(int argc, char *argv[])
       exit(0);
 
     if (event.type == SDL_KEYDOWN && event.key.keysym.sym == SDLK_ESCAPE)
-      goto Menu;
+    {  
+      GameState = Menu;
+      return;
+    }
 
     if ( (event.key.keysym.sym == SDLK_b) && (event.type == SDL_KEYUP) )
-      back2Button.keytrick = false;
+      ButtonVector[10].keytrick = false;
 
     if( (event.key.keysym.sym == SDLK_b) && (event.type == SDL_KEYDOWN) )
-      back2Button.keytrick = true;
+      ButtonVector[10].keytrick = true;
 
-    if ( (event.button.button == SDL_BUTTON_LEFT) && (back2Button.IsSelected)
-      && (event.type == SDL_MOUSEBUTTONUP)) 
-      goto SAP;
+    if ( (event.button.button == SDL_BUTTON_LEFT) && (ButtonVector[10].IsSelected)
+      && (event.type == SDL_MOUSEBUTTONUP))
+    {  
+      GameState = SAP;
+      return;
+    }
 
     if ((event.key.keysym.sym == SDLK_c) && (event.type == SDL_KEYUP) )
     {
       pa_back = 4;  
-      goto GSM;
+      GameState = GSM;
+      return;
     }
 
     if ( (event.key.keysym.sym == SDLK_c) && (event.type == SDL_KEYDOWN) )
-      continueButton.keytrick = true;
+      ButtonVector[12].keytrick = true;
 
-    if ( (event.button.button == SDL_BUTTON_LEFT) && (continueButton.IsSelected)
+    if ( (event.button.button == SDL_BUTTON_LEFT) && (ButtonVector[12].IsSelected)
       && (event.type == SDL_MOUSEBUTTONUP)) 
     {
       pa_back = 4;  
-      goto GSM;
+      GameState = GSM;
+      return;
     }
 
     if (  (!P41.IsSelected) && (!P42.IsSelected) && (!P43.IsSelected))
@@ -1476,11 +1475,11 @@ int main(int argc, char *argv[])
     GetDotErase(dots, field_x_base, field_y_base);
     DrawDots(dots, dots_menu_size, field_x_size);
 
-    sgLabel.Draw();
-    colorsLabel.Draw();
-    back2Button.Draw();
-    rgbLabel.Draw();
-    continueButton.Draw();
+    LabelVector[3].Draw();
+    LabelVector[4].Draw();
+    ButtonVector[10].Draw();
+    LabelVector[5].Draw();
+    ButtonVector[12].Draw();
     P41.Draw();
     P42.Draw();
     P43.Draw();
@@ -1489,76 +1488,108 @@ int main(int argc, char *argv[])
     
     SDL_RenderPresent(renderer);
   }
-////////////////////////////////////////////////////////////////////////////////
+}
 
-
-//////////////////////////////////Game size menu////////////////////////////////
-  GSM:
+void GameSizeMenu()
+{
   game_x_size = 30;
   game_y_size = 30;
-  back3Button.keytrick = false;
-  continueButton.keytrick = false;
+  ButtonVector[11].keytrick = false;
+  ButtonVector[12].keytrick = false;
   for (int i = 0; i < dots_menu_size; i++)
     dots[i].exist = false;
 
   while (1)
   {
     mouse.Update();
-    continueButton.Update(mouse);
-    back3Button.Update(mouse);
+    ButtonVector[12].Update(mouse);
+    ButtonVector[11].Update(mouse);
 
     SDL_PollEvent(&event);
     if (event.type == SDL_KEYDOWN && event.type == SDL_QUIT)
       exit(0);
 
     if (event.type == SDL_KEYDOWN && event.key.keysym.sym == SDLK_ESCAPE)
-      goto Menu;
+    {  
+      GameState = Menu;
+      return;
+    }
 
     if ((event.key.keysym.sym == SDLK_c) && (event.type == SDL_KEYUP) )
-      goto GRM;
+    {
+      GameState = GRM;
+      return;
+    }
 
-    if ( (event.button.button == SDL_BUTTON_LEFT) && (continueButton.IsSelected)
+    if ( (event.button.button == SDL_BUTTON_LEFT) && (ButtonVector[12].IsSelected)
       && (event.type == SDL_MOUSEBUTTONUP)) 
-      goto GRM;
+    {
+      GameState = GRM;
+      return;
+    }
 
     if ( (event.key.keysym.sym == SDLK_c) && (event.type == SDL_KEYDOWN) )
-      continueButton.keytrick = true;
+      ButtonVector[12].keytrick = true;
 
     if( (event.key.keysym.sym == SDLK_b) && (event.type == SDL_KEYDOWN) )
-      back3Button.keytrick = true;
+      ButtonVector[11].keytrick = true;
 
     if ( (event.key.keysym.sym == SDLK_b) && (event.type == SDL_KEYUP) )
     {
       switch (pa_back)
       {
         case 1:
-          goto OPM;
+        {
+          GameState = ONEPM;
+          return;
+        }  
         case 2:
-          goto TWOPM;
+        {
+          GameState = TWOPM;
+          return;
+        } 
         case 3:
-          goto THPM;
+        {
+          GameState = THREEPM;
+          return;
+        } 
         case 4:
-          goto FPM;
+        {
+          GameState = THREEPM;
+          return;
+        } 
       }
     }
 
-    if ( (event.button.button == SDL_BUTTON_LEFT) && (back3Button.IsSelected)
+    if ( (event.button.button == SDL_BUTTON_LEFT) && (ButtonVector[11].IsSelected)
       && (event.type == SDL_MOUSEBUTTONUP)) 
    {
       switch (pa_back)
       {
         case 1:
-          goto OPM;
+        {
+          GameState = ONEPM;
+          return;
+        }  
         case 2:
-          goto TWOPM;
+        {
+          GameState = TWOPM;
+          return;
+        } 
         case 3:
-          goto THPM;
+        {
+          GameState = THREEPM;
+          return;
+        } 
         case 4:
-          goto FPM;
+        {
+          GameState = THREEPM;
+          return;
+        } 
       }
     }
 
-    temp_str = to_string(game_x_size);
+    string temp_str = to_string(game_x_size);
     field_x = (char*) temp_str.c_str();
     surfaceText = TTF_RenderText_Solid(my_Font, field_x, {255, 255, 0});
     textureText = SDL_CreateTextureFromSurface(renderer, surfaceText);
@@ -1591,14 +1622,14 @@ int main(int argc, char *argv[])
     if (game_y_size < 5)
       game_y_size = 5;
 
-    if (game_y_size > 300)
-      game_y_size = 300;
+    if (game_y_size > 320)
+      game_y_size = 320;
 
     if (game_x_size < 5)
       game_x_size = 5;
 
-    if (game_x_size > 300)
-      game_x_size = 300;
+    if (game_x_size > 320)
+      game_x_size = 320;
 
     if (game_x_size >= 100)
       rectangle.w = rectangle_w * 3;
@@ -1634,69 +1665,91 @@ int main(int argc, char *argv[])
     SDL_DestroyTexture(textureText2);
     SDL_FreeSurface(surfaceText2);
 
-    back3Button.Draw();
-    sgsLabel.Draw();
-    useLabel.Draw();
-    continueButton.Draw();
+    ButtonVector[11].Draw();
+    LabelVector[6].Draw();
+    LabelVector[7].Draw();
+    ButtonVector[12].Draw();
     mouse.DrawCircle(cur_color);
     SDL_RenderPresent(renderer);
   }
-////////////////////////////////////////////////////////////////////////////////
+}
 
-
-////////////////////////////////////////Game rule menu//////////////////////////
-  GRM:
-  back2Button.keytrick = false;
-  dcwButton.keytrick = false;
-  tvButton.keytrick = false;
-  back2Button.keytrick = false;
+void GameRuleMenu()
+{
+  ButtonVector[10].keytrick = false;
+  ButtonVector[13].keytrick = false;
+  ButtonVector[14].keytrick = false;
 
   while (1)
   {
     mouse.Update();
-    back2Button.Update(mouse);
-    dcwButton.Update(mouse);
-    tvButton.Update(mouse); 
+    ButtonVector[10].Update(mouse);
+    ButtonVector[13].Update(mouse);
+    ButtonVector[14].Update(mouse); 
 
     SDL_PollEvent(&event);
     if (event.type == SDL_KEYDOWN && event.type == SDL_QUIT)
       exit(0);
 
     if ( (event.key.keysym.sym == SDLK_b) && (event.type == SDL_KEYUP) )
-      goto GSM;
+    {  
+      GameState = GSM;
+      return;
+    }
 
     if( (event.key.keysym.sym == SDLK_b) && (event.type == SDL_KEYDOWN) )
-      back2Button.keytrick = true;
+      ButtonVector[10].keytrick = true;
 
-    if ( (event.button.button == SDL_BUTTON_LEFT) && (back2Button.IsSelected)
+    if ( (event.button.button == SDL_BUTTON_LEFT) && (ButtonVector[10].IsSelected)
       && (event.type == SDL_MOUSEBUTTONUP)) 
-      goto GSM;
+    {  
+      GameState = GSM;
+      return;
+    }
 
     if (event.key.keysym.sym == SDLK_ESCAPE)
-      goto Menu;
+    {  
+      GameState = Menu;
+      return;
+    }
 
     if ((event.key.keysym.sym == SDLK_t) && (event.type == SDL_KEYUP) )
-      goto Game;
+    {  
+      GameState = Game;
+      return;
+    }
 
-    if ( (event.button.button == SDL_BUTTON_LEFT) && (tvButton.IsSelected)
+    if ( (event.button.button == SDL_BUTTON_LEFT) && (ButtonVector[14].IsSelected)
       && (event.type == SDL_MOUSEBUTTONUP)) 
-      goto Game;
+    {  
+      GameState = Game;
+      return;
+    }
 
     if ( (event.key.keysym.sym == SDLK_t) && (event.type == SDL_KEYDOWN) )
-      tvButton.keytrick = true;
+      ButtonVector[14].keytrick = true;
 
     if ((event.key.keysym.sym == SDLK_d) && (event.type == SDL_KEYUP) )
-      goto Game;
+    {  
+      GameState = Game;
+      return;
+    }
 
-    if ( (event.button.button == SDL_BUTTON_LEFT) && (dcwButton.IsSelected)
+    if ( (event.button.button == SDL_BUTTON_LEFT) && (ButtonVector[13].IsSelected)
       && (event.type == SDL_MOUSEBUTTONUP)) 
-      goto Game;
+    {  
+      GameState = Game;
+      return;
+    }
 
     if ( (event.key.keysym.sym == SDLK_d) && (event.type == SDL_KEYDOWN) )
-      dcwButton.keytrick = true;
+      ButtonVector[13].keytrick = true;
 
     if ( (event.key.keysym.sym == SDLK_b) && (event.type == SDL_KEYUP) )
-      goto GSM;
+    {  
+      GameState = GSM;
+      return;
+    }
 
     SDL_GetMouseState(&xMouse,&yMouse);
     SDL_SetRenderDrawColor(renderer, red, green, blue, SDL_ALPHA_OPAQUE);
@@ -1707,18 +1760,17 @@ int main(int argc, char *argv[])
     Zoom();
     EnumerateField(game_y_size, game_x_size, my_Font);
 
-    tvButton.Draw();
-    dcwButton.Draw();
-    back2Button.Draw();
-    sgrLabel.Draw();
+    ButtonVector[14].Draw();
+    ButtonVector[13].Draw();
+    ButtonVector[10].Draw();
+    LabelVector[8].Draw();
     mouse.DrawCircle(cur_color);
     SDL_RenderPresent(renderer);
   }
-////////////////////////////////////////////////////////////////////////////////
+}
 
-
-////////////////////////////////////////Main game cycle/////////////////////////
-  Game:
+void GameItself()
+{
   int dots_game_size = (game_y_size + 2) * (game_x_size + 2);
   Dots *dots_g = new Dots[dots_game_size];
   for (int i = 0; i < dots_game_size; i++)
@@ -1735,6 +1787,7 @@ int main(int argc, char *argv[])
       break;
     case 3:
       cur_color = P31.clr;
+      break;
     case 4:
       cur_color = P41.clr;
   }
@@ -1798,11 +1851,335 @@ int main(int argc, char *argv[])
     mouse.DrawCircle(cur_color);
     SDL_RenderPresent(renderer);    
   }
-////////////////////////////////////////////////////////////////////////////////
-
-
-//////////////////////////Exiting program///////////////////////////////////////
   delete dots_g;
+}
+
+
+int main(int argc, char *argv[])
+{
+  using std::cout;
+  using std::cin;
+  using std::endl;
+  using std::max;
+  using std::to_string;
+  using std::string;
+  using std::pair;
+
+///////////////////////////////Finding out display parameters///////////////////
+  #if __linux__
+  char *wid; Display *dpy; Window w;
+  if(!(dpy = XOpenDisplay(0)))
+    errx(1, "cannot open display '%s'", XDisplayName(0));
+  int snum = DefaultScreen(dpy);
+  ScWidth = DisplayWidth(dpy, snum);
+  ScHeight = DisplayHeight(dpy, snum);
+  cout << "Device screen width: " << ScWidth << ", Device screen height: "
+       << ScHeight << endl;
+  #endif
+
+  #if _WIN32
+    GetDesktopResolution(ScWidth, ScHeight);
+    cout << ScWidth << '\n' << ScHeight << '\n';
+  #endif     
+
+/////////////////////////////////////Some variables/////////////////////////////
+  cur_color = white;
+  mouse.GiveColor(white);
+  mouse.circle_size = 6;
+
+  const int vo = ScHeight / 8;  //vertical offset
+  const int ho = ScWidth / 5;  //horizontal offset
+  bool dots_conqured_victory = false;
+
+/////////////////////////////////////Initializing SDL///////////////////////////
+  window = SDL_CreateWindow("Dots", 0, 0, ScWidth, ScHeight,
+    SDL_WINDOW_FULLSCREEN);
+  renderer = SDL_CreateRenderer(window, -1, SDL_RENDERER_ACCELERATED); 
+
+  if (SDL_Init(SDL_INIT_VIDEO) < 0)
+  {
+    SDL_LogError(SDL_LOG_CATEGORY_APPLICATION, "Couldn't initialize SDL: %s",
+      SDL_GetError());
+    return 3;
+  }
+
+//////////////////////////////SDL_TTF for GSM///////////////////////////////////
+  if (TTF_Init() == -1)
+    cout << "Could not initialize SDL2_ttf, error:" << TTF_GetError() << endl;
+  else
+    cout << "SDL2_ttf system ready to go!";
+
+  my_Font = TTF_OpenFont("DroidSans.ttf", 32);
+  if (my_Font == nullptr)
+  {
+    cout << "could not load font" << endl;
+    exit(1);
+  }
+
+  string temp_str = to_string(field_x_size);
+  field_x = (char*) temp_str.c_str();
+  rectangle_w = ScWidth / 32;
+  rectangle_h = ScWidth / 18;
+  SDL_Surface* surfaceText = TTF_RenderText_Solid(my_Font, field_x,
+    {255, 255, 0});
+  textureText = SDL_CreateTextureFromSurface(renderer, surfaceText);
+  rectangle.w = rectangle_w * 2;
+  rectangle.h = rectangle_h * 2;
+  rectangle.x = ScWidth * 1 / 3 - rectangle.w / 2;
+  rectangle.y = vo * 3;
+
+  temp_str = to_string(field_y_size);
+  field_y = (char*) temp_str.c_str();
+  surfaceText2 = TTF_RenderText_Solid(my_Font, field_y, {255, 255, 0});
+  SDL_Texture* textureText2 = SDL_CreateTextureFromSurface
+    (renderer, surfaceText2);
+  rectangle2.w = rectangle_w * 2;
+  rectangle2.h = rectangle_h * 2;
+  rectangle2.x = ScWidth * 2 / 3 - rectangle2.w / 2;
+  rectangle2.y = vo * 3;
+
+  SDL_Surface* surfaceText3 = TTF_RenderText_Solid(my_Font, "x",
+    {255, 255, 0});
+  textureText3 = SDL_CreateTextureFromSurface(renderer, surfaceText3);
+  SDL_FreeSurface(surfaceText3);
+
+  rectangle3.w = rectangle_w * 2;
+  rectangle3.h = rectangle_h * 2;
+  rectangle3.x = ScWidth * 1 / 2 - rectangle3.w / 2;
+  rectangle3.y = vo * 3;
+
+/////////////////All buttons and labels are here////////////////////////////////  
+  const char* New = "images/new.png";
+  Button NewButton(New, ho, vo, 100, 400);
+  NewButton.srect.y = 0;
+  NewButton.drect.x = ScWidth / 2 - NewButton.drect.w / 2; 
+  NewButton.drect.y = vo;
+  ButtonVector.push_back(NewButton);  //0 - index
+
+  const char* load = "images/load.png";
+  Button loadButton(load, ho, vo, 100, 400);
+  loadButton.srect.y = 0;
+  loadButton.drect.x = ScWidth / 2 - loadButton.drect.w / 2; 
+  loadButton.drect.y = vo * 2;
+  ButtonVector.push_back(loadButton);  //1 - index
+
+  const char* helpB = "images/help.png";
+  Button helpButton(helpB, ho, vo, 100, 400);
+  helpButton.srect.y = 0;
+  helpButton.drect.x = ScWidth / 2 - helpButton.drect.w / 2; 
+  helpButton.drect.y = vo * 3;
+  ButtonVector.push_back(helpButton);  //2 - index
+
+  const char* credits = "images/credits.png";
+  Button creditsButton(credits, ho, vo, 100, 400);
+  creditsButton.srect.y = 0;
+  creditsButton.drect.x = ScWidth / 2 - creditsButton.drect.w / 2; 
+  creditsButton.drect.y = vo * 4;
+  ButtonVector.push_back(creditsButton);  //3 - index
+
+  const char* exitB = "images/exit.png";
+  Button exitButton(exitB, ho, vo, 100, 400);
+  exitButton.srect.y = 0;
+  exitButton.drect.x = ScWidth / 2 - exitButton.drect.w / 2; 
+  exitButton.drect.y = vo * 5;
+  ButtonVector.push_back(exitButton);  //4 - index
+
+  const char* oneB = "images/one.png";
+  Button oneButton(oneB, ho, vo, 100, 200);
+  oneButton.srect.y = 0;
+  oneButton.drect.x = ScWidth / 2 - oneButton.drect.w / 2; 
+  oneButton.drect.y = vo * 2;
+  ButtonVector.push_back(oneButton);  //5 - index
+
+  const char* twoB = "images/two.png";
+  Button twoButton(twoB, ho, vo, 100, 400);
+  twoButton.srect.y = 0;
+  twoButton.drect.x = ScWidth / 2 - twoButton.drect.w / 2; 
+  twoButton.drect.y = vo * 3;
+  ButtonVector.push_back(twoButton);  //6 - index
+
+  const char* threeB = "images/three.png";
+  Button threeButton(threeB, ho, vo, 100, 400);
+  threeButton.srect.y = 0;
+  threeButton.drect.x = ScWidth / 2 - threeButton.drect.w / 2; 
+  threeButton.drect.y = vo * 4;
+  ButtonVector.push_back(threeButton);  //7 - index
+
+  const char* fourB = "images/four.png";
+  Button fourButton(fourB, ho, vo, 100, 400);
+  fourButton.srect.y = 0;
+  fourButton.drect.x = ScWidth / 2 - fourButton.drect.w / 2; 
+  fourButton.drect.y = vo * 5;
+  ButtonVector.push_back(fourButton);  //8 - index
+
+  const char* backB = "images/back.png";
+  Button backButton(backB, ho, vo, 100, 400);
+  backButton.srect.y = 0;
+  backButton.drect.x = ScWidth / 2 - backButton.drect.w / 2; 
+  backButton.drect.y = vo * 6;
+  ButtonVector.push_back(backButton);  //9 - index
+
+  Button back2Button(backB, ho, vo, 100, 400);
+  back2Button.srect.y = 0;
+  back2Button.drect.x = ScWidth / 2 - back2Button.drect.w / 2; 
+  back2Button.drect.y = vo * 6;
+  ButtonVector.push_back(back2Button);  //10 - index
+
+  Button back3Button(backB, ho, vo, 100, 400);
+  back3Button.srect.y = 0;
+  back3Button.drect.x = ScWidth / 2 - back3Button.drect.w / 2; 
+  back3Button.drect.y = vo * 6;
+  ButtonVector.push_back(back3Button);  //11 - index
+
+  const char* continueB = "images/continue.png";
+  Button continueButton(continueB, ho, vo, 100, 400);
+  continueButton.srect.y = 0;
+  continueButton.drect.x = ScWidth / 2 - continueButton.drect.w / 2; 
+  continueButton.drect.y = vo * 5;
+  ButtonVector.push_back(continueButton);  //12 - index
+
+  const char* dcw = "images/dcw.png";
+  Button dcwButton(dcw, ho * 4.5, vo, 100, 900);
+  dcwButton.srect.y = 0;
+  dcwButton.drect.x = ScWidth / 2 - dcwButton.drect.w / 2; 
+  dcwButton.drect.y = vo * 3;
+  ButtonVector.push_back(dcwButton);  //13 - index
+
+  const char* tvB = "images/tv.png";
+  Button tvButton(tvB, ho * 3.5, vo, 100, 700);
+  tvButton.srect.y = 0;
+  tvButton.drect.x = ScWidth / 2 - tvButton.drect.w / 2; 
+  tvButton.drect.y = vo * 4; 
+  ButtonVector.push_back(tvButton);  //14 - index  
+
+  const char* paB = "images/pa.png";
+  Label paLabel(paB, ho * 1.5, vo, 100, 600);
+  paLabel.srect.y = 0;
+  paLabel.drect.x = ScWidth / 2 - paLabel.drect.w / 2; 
+  paLabel.drect.y = vo;
+  LabelVector.push_back(paLabel); //0 - index
+
+  const char* gvaiL = "images/GVAI.png";
+  Label gvaiLabel(gvaiL, ho * 1.5, vo, 100, 600);
+  gvaiLabel.srect.y = 0;
+  gvaiLabel.drect.x = ScWidth / 2 - gvaiLabel.drect.w / 2; 
+  gvaiLabel.drect.y = vo;
+  LabelVector.push_back(gvaiLabel); //1 - index
+
+  const char* udL = "images/ud.png";
+  Label udLabel(udL, ho * 1.5, vo, 100, 600);
+  udLabel.srect.y = 0;
+  udLabel.drect.x = ScWidth / 2 - udLabel.drect.w / 2; 
+  udLabel.drect.y = vo * 2;
+  LabelVector.push_back(udLabel); //2 - index
+
+  const char* sgL = "images/sg.png";
+  Label sgLabel(sgL, ho * 1.5, vo, 100, 600);
+  sgLabel.srect.y = 0;
+  sgLabel.drect.x = ScWidth / 2 - sgLabel.drect.w / 2; 
+  sgLabel.drect.y = vo;
+  LabelVector.push_back(sgLabel); //3 - index
+
+  const char* colorsL = "images/colors.png";
+  Label colorsLabel(colorsL, ho * 1.5, vo, 100, 600);
+  colorsLabel.srect.y = 0;
+  colorsLabel.drect.x = ScWidth / 2 - colorsLabel.drect.w / 2; 
+  colorsLabel.drect.y = vo * 2;
+  LabelVector.push_back(colorsLabel); //4 - index
+
+  const char* rgbL = "images/rgb.png";
+  Label rgbLabel(rgbL, ho * 1.5, vo, 100, 600);
+  rgbLabel.srect.y = 0;
+  rgbLabel.drect.x = ScWidth / 2 - rgbLabel.drect.w / 2; 
+  rgbLabel.drect.y = vo * 3;
+  LabelVector.push_back(rgbLabel); //5 - index
+
+  const char* sgsL = "images/sgs.png";
+  Label sgsLabel(sgsL, ho * 1.5, vo, 100, 600);
+  sgsLabel.srect.y = 0;
+  sgsLabel.drect.x = ScWidth / 2 - sgsLabel.drect.w / 2; 
+  sgsLabel.drect.y = vo; 
+  LabelVector.push_back(sgsLabel); //6 - index
+
+  const char* useL = "images/use.png";
+  Label useLabel(useL, ho * 1.5, vo, 100, 600);
+  useLabel.srect.y = 0;
+  useLabel.drect.x = ScWidth / 2 - useLabel.drect.w / 2; 
+  useLabel.drect.y = vo * 2;
+  LabelVector.push_back(useLabel); //7 - index
+
+  const char* sgrL = "images/sgr.png";
+  Label sgrLabel(sgrL, ho * 1.5, vo, 100, 600);
+  sgrLabel.srect.y = 0;
+  sgrLabel.drect.x = ScWidth / 2 - sgrLabel.drect.w / 2; 
+  sgrLabel.drect.y = vo;
+  LabelVector.push_back(sgrLabel); //8 - index
+
+  P21.rect.x = ScWidth / 3 - P21.rect.w / 2; 
+  P21.rect.y = vo * 4;
+
+  P22.rect.x = ScWidth * 2 / 3 - P22.rect.w / 2; 
+  P22.rect.y = vo * 4;
+
+  P31.rect.x = ScWidth / 4 - P21.rect.w / 2; 
+  P31.rect.y = vo * 4;
+
+  P32.rect.x = ScWidth * 2 / 4 - P22.rect.w / 2; 
+  P32.rect.y = vo * 4;
+
+  P33.rect.x = ScWidth * 3 / 4 - P22.rect.w / 2; 
+  P33.rect.y = vo * 4;
+
+  P41.rect.x = ScWidth * 1 / 5 - P22.rect.w / 2; 
+  P41.rect.y = vo * 4;
+
+  P42.rect.x = ScWidth * 2 / 5 - P21.rect.w / 2; 
+  P42.rect.y = vo * 4;
+
+  P43.rect.x = ScWidth * 3 / 5 - P22.rect.w / 2; 
+  P43.rect.y = vo * 4;
+
+  P44.rect.x = ScWidth * 4 / 5 - P22.rect.w / 2; 
+  P44.rect.y = vo * 4;
+////////////////////////////////////////////////////////////////////////////////
+  GameState = Menu;
+
+  while(1)
+  {
+    switch(GameState)
+    {
+      case Menu:
+        MainMenu();
+        break;
+      case SAP:
+        SelectAmountOfPlayersMenu();
+        break;
+      case Credits:
+        CreditsMenu();
+        break;
+      case ONEPM:
+        OnePlayerMenu();
+        break;
+      case TWOPM:
+        TwoPlayerMenu();
+        break;
+      case THREEPM:
+        ThreePlayerMenu();
+        break;
+      case FOURPM:
+        FourPlayerMenu();
+        break;
+      case GSM:
+        GameSizeMenu();
+        break;
+      case GRM:
+        GameRuleMenu();
+        break;
+      case Game:
+        GameItself();  
+    }
+  }
+//////////////////////////Exiting program///////////////////////////////////////
   SDL_DestroyTexture(textureText);
   SDL_DestroyTexture(textureText2);
   SDL_DestroyTexture(textureText3);
@@ -1812,6 +2189,5 @@ int main(int argc, char *argv[])
   SDL_DestroyWindow(window);
   SDL_Quit();
   return 666;
-////////////////////////////////////////////////////////////////////////////////
 }
 
