@@ -25,7 +25,7 @@ public:
 
     point.w = 1;
     point.h = 1;
-    circle_size = 18;
+    circle_size = 7;
   }
 
   void GiveColor(SDL_Color color)
@@ -52,7 +52,6 @@ public:
 
   void DrawCircle(SDL_Color scolor)
   {
-    circle_size = 8;
     SDL_SetRenderDrawColor(renderer, clr.r, clr.g, clr.b, clr.a);
     for (int w = 0; w < circle_size * 2; w++)
     {

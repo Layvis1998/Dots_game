@@ -28,7 +28,7 @@ public:
   bool exist;
   SDL_Color clr;
   uint8_t visited;
-  bool is_deadend;
+  bool deadend;
 };
 
 //global constants
@@ -44,17 +44,20 @@ const int field_y_credits = 100;
 const int dots_credits_size = int(field_y_credits + 2) * int(field_x_credits + 2);
 
 //gloabal variables
+int vo;  //vertical offset
+int ho;  //horizontal offset
+int maxdotamount = 0;
+int maxeatendots = 0;
+bool classic = true;
 vector <Button> ButtonVector;
 vector <Label> LabelVector;
+vector <ColorButton> ClrButtonVector;
 Dots dots[dots_menu_size];
 Dots dots_c[dots_credits_size];
 Dots* dots_g;
 char* field_x;
 char* field_y;  
-SDL_Surface* surfaceText;
-SDL_Surface* surfaceText2;
-SDL_Surface* surfaceText3;
-TTF_Font* my_Font;
+
 uint8_t red = 25;
 uint8_t green = 80;
 uint8_t blue = 80;
@@ -68,27 +71,14 @@ int game_x_size = 30;
 int game_y_size = 30;
 int rectangle_w;
 int rectangle_h;
-SDL_Texture *textureText;
-SDL_Texture *textureText2;
-SDL_Texture *textureText3;
-SDL_Rect rectangle;
-SDL_Rect rectangle2;
-SDL_Rect rectangle3;
-ColorButton P21(25, 170, 100);
-ColorButton P22(100, 0, 150);
-ColorButton P31(255, 0, 0);
-ColorButton P32(0, 255, 0);
-ColorButton P33(0, 0, 255);
-ColorButton P41(0, 255, 10);
-ColorButton P42(255, 10, 0);
-ColorButton P43(0, 10, 255);
-ColorButton P44(240, 240, 0);
- 
+
+TTF_Font* my_Font; 
 Mouse mouse;
+int xMouse = 0;
+int yMouse = 0;
 uint8_t pa_back = 1;
 SDL_Color white = {255, 255, 255, 255};
 SDL_Color cur_color;
-int xMouse, yMouse;
 
 enum GameStateType {Menu, Credits, SAP, ONEPM, TWOPM, THREEPM, FOURPM, GSM, GRM, Game};
 GameStateType GameState;
@@ -120,39 +110,39 @@ int Different_ways( Dots* dots, int current, int fx , int fy)
   int retval = 0;
 
   if (((current + 1) % fx != 0) && (dots[current + 1].exist == true)
-    && (dots[current + 1].is_deadend != true))
+    && (dots[current + 1].deadend != true))
     retval++;
 
   if ( (( current + 1) % fx != 0) && ( current + fx < fx * fy )
      && (dots[current + 1 + fx].exist == true)
-     && (dots[current + 1 + fx].is_deadend != true))
+     && (dots[current + 1 + fx].deadend != true))
     retval++;
 
   if (( current + fx < fx * fy ) && (dots[current + fx].exist == true)
-    && (dots[current + fx].is_deadend != true))
+    && (dots[current + fx].deadend != true))
     retval++;
 
   if (( current % fx != 0) && ( current + fx < fx * fy )
     && (dots[current - 1 + fx].exist == true)
-    && (dots[current - 1 + fx].is_deadend != true))
+    && (dots[current - 1 + fx].deadend != true))
     retval++;
 
   if ( ( current % fx != 0) && (dots[current - 1].exist == true)
-    && (dots[current - 1].is_deadend != true))
+    && (dots[current - 1].deadend != true))
     retval++;
 
   if ( ( current % fx != 0) && ( current - fx >= 0)
     && (dots[current - 1 - fx].exist == true)
-    && (dots[current - 1 - fx].is_deadend != true))
+    && (dots[current - 1 - fx].deadend != true))
     retval++;
 
   if (( current - fx >= 0) && (dots[current - fx].exist == true)
-    && (dots[current - fx].is_deadend != true))  
+    && (dots[current - fx].deadend != true))  
     retval++;
 
   if ( (( current + 1) % fx != 0) && ( current - fx >= 0 )
      && (dots[current + 1 - fx].exist == true)
-     && (dots[current + 1 - fx].is_deadend != true))
+     && (dots[current + 1 - fx].deadend != true))
     retval++;
 
   return retval;
@@ -173,10 +163,10 @@ bool dfs (Dots* dots, int current, stack<int>& st,
 
   if (Different_ways(dots, current, fx , fy) <= 1)
   {  
-    dots[current].is_deadend = true;
+    dots[current].deadend = true;
     while (!st.empty() && (Different_ways(dots, st.top(), fx , fy) <= 1))
     { 
-      dots[st.top()].is_deadend = true;
+      dots[st.top()].deadend = true;
       st.pop();
     }
   }
@@ -191,7 +181,7 @@ bool dfs (Dots* dots, int current, stack<int>& st,
   //up-right direction
   if ( (( current + 1) % fx != 0) && ( current - fx >= 0 )
      && (dots[current + 1 - fx].exist == true)
-     && (dots[current + 1 - fx].is_deadend == false))
+     && (dots[current + 1 - fx].deadend == false))
   {
     if (dots[current + 1 - fx].visited == false)
       dfs(dots, current + 1 - fx, st, set, fx, fy);
@@ -199,7 +189,7 @@ bool dfs (Dots* dots, int current, stack<int>& st,
 
   // right direction
   if (((current + 1) % fx != 0) && (dots[current + 1].exist == true)
-    && (dots[current + 1].is_deadend == false))
+    && (dots[current + 1].deadend == false))
   {                  
     if (dots[current + 1].visited == false)
       dfs(dots, current + 1, st, set, fx, fy);
@@ -208,7 +198,7 @@ bool dfs (Dots* dots, int current, stack<int>& st,
   //down-right direction  
   if ( (( current + 1) % fx != 0) && ( current + fx < fx * fy )
      && (dots[current + 1 + fx].exist == true)
-     && (dots[current + 1 + fx].is_deadend == false))   
+     && (dots[current + 1 + fx].deadend == false))   
   {
     if (dots[current + 1 + fx].visited == false)
       dfs(dots, current + 1 + fx, st, set, fx, fy);  
@@ -216,7 +206,7 @@ bool dfs (Dots* dots, int current, stack<int>& st,
 
   // down direction
   if (( current + fx < fx * fy ) && (dots[current + fx].exist == true)
-    && (dots[current + fx].is_deadend == false))
+    && (dots[current + fx].deadend == false))
   { 
     if (dots[current + fx].visited == false)
       dfs(dots, current + fx, st, set, fx, fy);
@@ -225,7 +215,7 @@ bool dfs (Dots* dots, int current, stack<int>& st,
   //down-left direction
   if (( current % fx != 0) && ( current + fx < fx * fy )
      && (dots[current - 1 + fx].exist == true)
-     && (dots[current - 1 + fx].is_deadend == false))
+     && (dots[current - 1 + fx].deadend == false))
   { 
     if (dots[current - 1 + fx].visited == false)
       dfs(dots, current - 1 + fx, st, set, fx, fy); 
@@ -233,7 +223,7 @@ bool dfs (Dots* dots, int current, stack<int>& st,
 
   // left direction
   if ( ( current % fx != 0) && (dots[current - 1].exist == true)
-    && (dots[current - 1].is_deadend == false))
+    && (dots[current - 1].deadend == false))
   {  
     if (dots[current - 1].visited == false)
       dfs(dots, current - 1, st, set, fx, fy);  
@@ -242,7 +232,7 @@ bool dfs (Dots* dots, int current, stack<int>& st,
   //up-left direction 
   if ( ( current % fx != 0) && ( current - fx >= 0)
      && (dots[current - 1 - fx].exist == true)
-     && (dots[current - 1 - fx].is_deadend == false))
+     && (dots[current - 1 - fx].deadend == false))
   {
     if (dots[current - 1 - fx].visited == false)
       dfs(dots, current - 1 - fx, st, set, fx, fy); 
@@ -250,7 +240,7 @@ bool dfs (Dots* dots, int current, stack<int>& st,
 
   // up diterction
   if (( current - fx >= 0) && (dots[current - fx].exist == true)
-    && (dots[current - fx].is_deadend == false))                                        
+    && (dots[current - fx].deadend == false))                                        
   { 
     if (dots[current - fx].visited == false)
       dfs(dots, current - fx, st, set, fx, fy);
@@ -259,7 +249,7 @@ bool dfs (Dots* dots, int current, stack<int>& st,
   //up-right direction
   if ( (( current + 1) % fx != 0) && ( current - fx >= 0 )
      && (dots[current + 1 - fx].exist == true)
-     && (dots[current + 1 - fx].is_deadend == false))
+     && (dots[current + 1 - fx].deadend == false))
   {
     if (dots[current + 1 - fx].visited == true)
      set.insert(current + 1 - fx);
@@ -267,7 +257,7 @@ bool dfs (Dots* dots, int current, stack<int>& st,
 
   // right direction
   if (((current + 1) % fx != 0) && (dots[current + 1].exist == true)
-    && (dots[current + 1].is_deadend == false))
+    && (dots[current + 1].deadend == false))
   {                  
     if (dots[current + 1].visited == false)
      set.insert(current + 1);
@@ -276,7 +266,7 @@ bool dfs (Dots* dots, int current, stack<int>& st,
   //down-right direction  
   if ( (( current + 1) % fx != 0) && ( current + fx < fx * fy )
      && (dots[current + 1 + fx].exist == true)
-     && (dots[current + 1 + fx].is_deadend == false))   
+     && (dots[current + 1 + fx].deadend == false))   
   {
     if (dots[current + 1 + fx].visited == true)
      set.insert(current + 1 + fx);   
@@ -284,7 +274,7 @@ bool dfs (Dots* dots, int current, stack<int>& st,
 
   // down direction
   if (( current + fx < fx * fy ) && (dots[current + fx].exist == true)
-    && (dots[current + fx].is_deadend == false))
+    && (dots[current + fx].deadend == false))
   { 
     if (dots[current + fx].visited == true)
      set.insert(current + fx); 
@@ -293,7 +283,7 @@ bool dfs (Dots* dots, int current, stack<int>& st,
   //down-left direction
   if (( current % fx != 0) && ( current + fx < fx * fy )
      && (dots[current - 1 + fx].exist == true)
-     && (dots[current - 1 + fx].is_deadend == false))
+     && (dots[current - 1 + fx].deadend == false))
   { 
     if (dots[current - 1 + fx].visited == true)
      set.insert(current - 1 + fx); 
@@ -301,7 +291,7 @@ bool dfs (Dots* dots, int current, stack<int>& st,
 
   // left direction
   if ( ( current % fx != 0) && (dots[current - 1].exist == true)
-    && (dots[current - 1].is_deadend == false))
+    && (dots[current - 1].deadend == false))
   {  
     if (dots[current - 1].visited == true)
      set.insert(current - 1);  
@@ -310,7 +300,7 @@ bool dfs (Dots* dots, int current, stack<int>& st,
   //up-left direction 
   if ( ( current % fx != 0) && ( current - fx >= 0)
      && (dots[current - 1 - fx].exist == true)
-     && (dots[current - 1 - fx].is_deadend == false))
+     && (dots[current - 1 - fx].deadend == false))
   {
     if (dots[current - 1 - fx].visited == true)
      set.insert(current - 1 - fx);  
@@ -318,7 +308,7 @@ bool dfs (Dots* dots, int current, stack<int>& st,
 
   // up diterction
   if (( current - fx >= 0) && (dots[current - fx].exist == true)
-    && (dots[current - fx].is_deadend == false))                                        
+    && (dots[current - fx].deadend == false))                                        
   { 
     if (dots[current - fx].visited == true)
      set.insert(current - fx); 
@@ -339,7 +329,7 @@ void GetCycle (vector <int>& v, Dots* dots, int current, int fx, int fy)
   //up-right direction
   if ( (( current + 1) % fx != 0) && ( current - fx >= 0 )
      && (dots[current + 1 - fx].exist == true)
-     && (dots[current + 1 - fx].is_deadend == false)
+     && (dots[current + 1 - fx].deadend == false)
      && (dots[current + 1 - fx].visited == 1))
   {
     //v.push_back(current + 1 - fx);
@@ -348,7 +338,7 @@ void GetCycle (vector <int>& v, Dots* dots, int current, int fx, int fy)
 
   // right direction
   if (((current + 1) % fx != 0) && (dots[current + 1].exist == true)
-    && (dots[current + 1].is_deadend == false)
+    && (dots[current + 1].deadend == false)
     && (dots[current + 1].visited == 1))
   {      
     //v.push_back(current + 1);            
@@ -358,7 +348,7 @@ void GetCycle (vector <int>& v, Dots* dots, int current, int fx, int fy)
   //down-right direction  
   if ( (( current + 1) % fx != 0) && ( current + fx < fx * fy )
      && (dots[current + 1 + fx].exist == true)
-     && (dots[current + 1 + fx].is_deadend == false)
+     && (dots[current + 1 + fx].deadend == false)
      && (dots[current + 1 + fx].visited == 1))   
   {
     //v.push_back(current + 1 + fx);
@@ -367,7 +357,7 @@ void GetCycle (vector <int>& v, Dots* dots, int current, int fx, int fy)
 
   // down direction
   if (( current + fx < fx * fy ) && (dots[current + fx].exist == true)
-    && (dots[current + fx].is_deadend == false)
+    && (dots[current + fx].deadend == false)
     && (dots[current + fx].visited == 1))
   { 
     //v.push_back(current + fx);
@@ -377,7 +367,7 @@ void GetCycle (vector <int>& v, Dots* dots, int current, int fx, int fy)
   //down-left direction
   if (( current % fx != 0) && ( current + fx < fx * fy )
      && (dots[current - 1 + fx].exist == true)
-     && (dots[current - 1 + fx].is_deadend == false)
+     && (dots[current - 1 + fx].deadend == false)
      && (dots[current - 1 + fx].visited == 1))
   { 
     //v.push_back(current - 1 + fx);
@@ -386,7 +376,7 @@ void GetCycle (vector <int>& v, Dots* dots, int current, int fx, int fy)
 
   // left direction
   if ( ( current % fx != 0) && (dots[current - 1].exist == true)
-    && (dots[current - 1].is_deadend == false)
+    && (dots[current - 1].deadend == false)
     && (dots[current - 1].visited == 1))
   { 
     //v.push_back(current - 1); 
@@ -396,7 +386,7 @@ void GetCycle (vector <int>& v, Dots* dots, int current, int fx, int fy)
   //up-left direction 
   if ( ( current % fx != 0) && ( current - fx >= 0)
      && (dots[current - 1 - fx].exist == true)
-     && (dots[current - 1 - fx].is_deadend == false)
+     && (dots[current - 1 - fx].deadend == false)
      && (dots[current - 1 - fx].visited == 1))
   {
     //v.push_back(current - 1 - fx);
@@ -405,7 +395,7 @@ void GetCycle (vector <int>& v, Dots* dots, int current, int fx, int fy)
 
   // up diterction
   if (( current - fx >= 0) && (dots[current - fx].exist == true)
-    && (dots[current - fx].is_deadend == false)
+    && (dots[current - fx].deadend == false)
     &&(dots[current - fx].visited == 1))                                        
   {   
     //v.push_back(current - fx);
@@ -530,16 +520,17 @@ void FillCredits(TTF_Font *my_Font)
 {
   SDL_Surface* surfaceText;
   SDL_Texture* textureText;
-  SDL_Rect rectangle4;
-  rectangle4.w = intrv * 47;
-  rectangle4.h = intrv * 2;
+  SDL_Rect rectangle;
+  rectangle.w = intrv * 47;
+  rectangle.h = intrv * 2;
       
-  const char *tex = "This game was written by 25-year old Karandeev Ilia at summer 2023 during his stay in \0";
+  const char *tex = "This game was written by 25-year old Karandeev"
+                    " Ilia at summer 2023 during his stay in \0";
   surfaceText = TTF_RenderText_Solid(my_Font, tex, {0, 200, 200});
   textureText = SDL_CreateTextureFromSurface(renderer, surfaceText);
-  rectangle4.x = intrv * 3 - x_c;
-  rectangle4.y = intrv * 5 - y_c;
-  SDL_RenderCopy(renderer, textureText, NULL, &rectangle4);
+  rectangle.x = intrv * 3 - x_c;
+  rectangle.y = intrv * 5 - y_c;
+  SDL_RenderCopy(renderer, textureText, NULL, &rectangle);
   SDL_DestroyTexture(textureText);
   SDL_FreeSurface(surfaceText);
 
@@ -547,9 +538,9 @@ void FillCredits(TTF_Font *my_Font)
                      " playing the Dots game back in Russia. He\0";
   surfaceText = TTF_RenderText_Solid(my_Font, tex2, {0, 200, 200});
   textureText = SDL_CreateTextureFromSurface(renderer, surfaceText);
-  rectangle4.x = intrv * 3 - x_c;
-  rectangle4.y = intrv * 8 - y_c;
-  SDL_RenderCopy(renderer, textureText, NULL, &rectangle4);
+  rectangle.x = intrv * 3 - x_c;
+  rectangle.y = intrv * 8 - y_c;
+  SDL_RenderCopy(renderer, textureText, NULL, &rectangle);
   SDL_DestroyTexture(textureText);
   SDL_FreeSurface(surfaceText);
 
@@ -557,9 +548,9 @@ void FillCredits(TTF_Font *my_Font)
                      " game with his friends during some of\0";
   surfaceText = TTF_RenderText_Solid(my_Font, tex3, {0, 200, 200});
   textureText = SDL_CreateTextureFromSurface(renderer, surfaceText);
-  rectangle4.x = intrv * 3 - x_c;
-  rectangle4.y = intrv * 11 - y_c;
-  SDL_RenderCopy(renderer, textureText, NULL, &rectangle4);
+  rectangle.x = intrv * 3 - x_c;
+  rectangle.y = intrv * 11 - y_c;
+  SDL_RenderCopy(renderer, textureText, NULL, &rectangle);
   SDL_DestroyTexture(textureText);
   SDL_FreeSurface(surfaceText);
 
@@ -567,9 +558,9 @@ void FillCredits(TTF_Font *my_Font)
                     " study in the CMC MSU faculty he \0";
   surfaceText = TTF_RenderText_Solid(my_Font, tex4, {0, 200, 200});
   textureText = SDL_CreateTextureFromSurface(renderer, surfaceText);
-  rectangle4.x = intrv * 3 - x_c;
-  rectangle4.y = intrv * 14 - y_c;
-  SDL_RenderCopy(renderer, textureText, NULL, &rectangle4);
+  rectangle.x = intrv * 3 - x_c;
+  rectangle.y = intrv * 14 - y_c;
+  SDL_RenderCopy(renderer, textureText, NULL, &rectangle);
   SDL_DestroyTexture(textureText);
   SDL_FreeSurface(surfaceText);
 
@@ -577,9 +568,9 @@ void FillCredits(TTF_Font *my_Font)
                      " games. Special thanks to his former\0";
   surfaceText = TTF_RenderText_Solid(my_Font, tex5, {0, 200, 200});
   textureText = SDL_CreateTextureFromSurface(renderer, surfaceText);
-  rectangle4.x = intrv * 3 - x_c;
-  rectangle4.y = intrv * 17 - y_c;
-  SDL_RenderCopy(renderer, textureText, NULL, &rectangle4);
+  rectangle.x = intrv * 3 - x_c;
+  rectangle.y = intrv * 17 - y_c;
+  SDL_RenderCopy(renderer, textureText, NULL, &rectangle);
   SDL_DestroyTexture(textureText);
   SDL_FreeSurface(surfaceText);
 
@@ -587,9 +578,9 @@ void FillCredits(TTF_Font *my_Font)
                      " during his hard days of living \0";
   surfaceText = TTF_RenderText_Solid(my_Font, tex6, {0, 200, 200});
   textureText = SDL_CreateTextureFromSurface(renderer, surfaceText);
-  rectangle4.x = intrv * 3 - x_c;
-  rectangle4.y = intrv * 20 - y_c;
-  SDL_RenderCopy(renderer, textureText, NULL, &rectangle4);
+  rectangle.x = intrv * 3 - x_c;
+  rectangle.y = intrv * 20 - y_c;
+  SDL_RenderCopy(renderer, textureText, NULL, &rectangle);
   SDL_DestroyTexture(textureText);
   SDL_FreeSurface(surfaceText);
 
@@ -597,9 +588,9 @@ void FillCredits(TTF_Font *my_Font)
                      " playing this wonderfull game. \0";
   surfaceText = TTF_RenderText_Solid(my_Font, tex7, {0, 200, 200});
   textureText = SDL_CreateTextureFromSurface(renderer, surfaceText);
-  rectangle4.x = intrv * 3 - x_c;
-  rectangle4.y = intrv * 23 - y_c;
-  SDL_RenderCopy(renderer, textureText, NULL, &rectangle4);
+  rectangle.x = intrv * 3 - x_c;
+  rectangle.y = intrv * 23 - y_c;
+  SDL_RenderCopy(renderer, textureText, NULL, &rectangle);
   SDL_DestroyTexture(textureText);
   SDL_FreeSurface(surfaceText);
 
@@ -607,9 +598,9 @@ void FillCredits(TTF_Font *my_Font)
                      "             Respectfully yours, Karandeev Ilia       \0";
   surfaceText = TTF_RenderText_Solid(my_Font, tex8, {0, 200, 200});
   textureText = SDL_CreateTextureFromSurface(renderer, surfaceText);
-  rectangle4.x = intrv * 3 - x_c;
-  rectangle4.y = intrv * 26 - y_c;
-  SDL_RenderCopy(renderer, textureText, NULL, &rectangle4);
+  rectangle.x = intrv * 3 - x_c;
+  rectangle.y = intrv * 26 - y_c;
+  SDL_RenderCopy(renderer, textureText, NULL, &rectangle);
   SDL_DestroyTexture(textureText);
   SDL_FreeSurface(surfaceText);
 }
@@ -618,13 +609,13 @@ void EnumerateField(int dot_clmns, int dot_rows, TTF_Font *my_Font)
 {
   SDL_Surface* surfaceText;
   SDL_Texture* textureText;
-  SDL_Rect rectangle4;
+  SDL_Rect rectangleE;
 
   int number = 0;
   string num_str;
   char* num;
-  rectangle4.w = intrv * 1.5;
-  rectangle4.h = intrv * 1.5;
+  rectangleE.w = intrv * 1.5;
+  rectangleE.h = intrv * 1.5;
 
   for (int number = 0; number < dot_rows; number += 5)
   {
@@ -632,9 +623,9 @@ void EnumerateField(int dot_clmns, int dot_rows, TTF_Font *my_Font)
     num = (char*) num_str.c_str();
     surfaceText = TTF_RenderText_Solid(my_Font, num, {0, 0, 0});
     textureText = SDL_CreateTextureFromSurface(renderer, surfaceText);
-    rectangle4.x = intrv * (number + 1.3) - x_c;
-    rectangle4.y = - y_c + 0.5;
-    SDL_RenderCopy(renderer, textureText, NULL, &rectangle4);
+    rectangleE.x = intrv * (number + 1.3) - x_c;
+    rectangleE.y = - y_c + 0.5;
+    SDL_RenderCopy(renderer, textureText, NULL, &rectangleE);
     SDL_DestroyTexture(textureText);
     SDL_FreeSurface(surfaceText);
   }
@@ -645,9 +636,9 @@ void EnumerateField(int dot_clmns, int dot_rows, TTF_Font *my_Font)
     num = (char*) num_str.c_str();
     surfaceText = TTF_RenderText_Solid(my_Font, num, {0, 0, 0});
     textureText = SDL_CreateTextureFromSurface(renderer, surfaceText);
-    rectangle4.x = - x_c + 0.5;
-    rectangle4.y = intrv * ( number + 1.3) - y_c;
-    SDL_RenderCopy(renderer, textureText, NULL, &rectangle4);
+    rectangleE.x = - x_c + 0.5;
+    rectangleE.y = intrv * ( number + 1.3) - y_c;
+    SDL_RenderCopy(renderer, textureText, NULL, &rectangleE);
     SDL_DestroyTexture(textureText);
     SDL_FreeSurface(surfaceText);
   }
@@ -658,9 +649,9 @@ void EnumerateField(int dot_clmns, int dot_rows, TTF_Font *my_Font)
     num = (char*) num_str.c_str();
     surfaceText = TTF_RenderText_Solid(my_Font, num, {0, 0, 0});
     textureText = SDL_CreateTextureFromSurface(renderer, surfaceText);
-    rectangle4.x = intrv * ( number + 1.3) - x_c;
-    rectangle4.y = intrv * (dot_clmns + 1.5) - y_c;
-    SDL_RenderCopy(renderer, textureText, NULL, &rectangle4);
+    rectangleE.x = intrv * ( number + 1.3) - x_c;
+    rectangleE.y = intrv * (dot_clmns + 1.5) - y_c;
+    SDL_RenderCopy(renderer, textureText, NULL, &rectangleE);
     SDL_DestroyTexture(textureText);
     SDL_FreeSurface(surfaceText);
   }
@@ -671,9 +662,9 @@ void EnumerateField(int dot_clmns, int dot_rows, TTF_Font *my_Font)
     num = (char*) num_str.c_str();
     surfaceText = TTF_RenderText_Solid(my_Font, num, {0, 0, 0});
     textureText = SDL_CreateTextureFromSurface(renderer, surfaceText);
-    rectangle4.x = intrv * (dot_rows + 1.5) - x_c;
-    rectangle4.y = intrv * ( number + 1.3) - y_c;
-    SDL_RenderCopy(renderer, textureText, NULL, &rectangle4);
+    rectangleE.x = intrv * (dot_rows + 1.5) - x_c;
+    rectangleE.y = intrv * ( number + 1.3) - y_c;
+    SDL_RenderCopy(renderer, textureText, NULL, &rectangleE);
     SDL_DestroyTexture(textureText);
     SDL_FreeSurface(surfaceText);
   }
@@ -683,16 +674,16 @@ void EnumerateField(int dot_clmns, int dot_rows, TTF_Font *my_Font)
   num = (char*) num_str.c_str();
   surfaceText = TTF_RenderText_Solid(my_Font, num, {0, 0, 0});
   textureText = SDL_CreateTextureFromSurface(renderer, surfaceText);
-  rectangle4.x = intrv * (number + 1.3) - x_c;
-  rectangle4.y = - y_c + 0.5;
-  SDL_RenderCopy(renderer, textureText, NULL, &rectangle4);
+  rectangleE.x = intrv * (number + 1.3) - x_c;
+  rectangleE.y = - y_c + 0.5;
+  SDL_RenderCopy(renderer, textureText, NULL, &rectangleE);
   SDL_DestroyTexture(textureText);
   SDL_FreeSurface(surfaceText);
   surfaceText = TTF_RenderText_Solid(my_Font, num, {0, 0, 0});
   textureText = SDL_CreateTextureFromSurface(renderer, surfaceText);
-  rectangle4.x = intrv * ( number + 1.3) - x_c;
-  rectangle4.y = intrv * (dot_clmns + 1.5) - y_c;
-  SDL_RenderCopy(renderer, textureText, NULL, &rectangle4);
+  rectangleE.x = intrv * ( number + 1.3) - x_c;
+  rectangleE.y = intrv * (dot_clmns + 1.5) - y_c;
+  SDL_RenderCopy(renderer, textureText, NULL, &rectangleE);
   SDL_DestroyTexture(textureText);
   SDL_FreeSurface(surfaceText);
 
@@ -701,16 +692,16 @@ void EnumerateField(int dot_clmns, int dot_rows, TTF_Font *my_Font)
   num = (char*) num_str.c_str();
   surfaceText = TTF_RenderText_Solid(my_Font, num, {0, 0, 0});
   textureText = SDL_CreateTextureFromSurface(renderer, surfaceText);
-  rectangle4.x = - x_c + 0.5;
-  rectangle4.y = intrv * ( number + 1.3) - y_c;
-  SDL_RenderCopy(renderer, textureText, NULL, &rectangle4);
+  rectangleE.x = - x_c + 0.5;
+  rectangleE.y = intrv * ( number + 1.3) - y_c;
+  SDL_RenderCopy(renderer, textureText, NULL, &rectangleE);
   SDL_DestroyTexture(textureText);
   SDL_FreeSurface(surfaceText);
   surfaceText = TTF_RenderText_Solid(my_Font, num, {0, 0, 0});
   textureText = SDL_CreateTextureFromSurface(renderer, surfaceText);
-  rectangle4.x = intrv * (dot_rows + 1.5) - x_c;
-  rectangle4.y = intrv * ( number + 1.3) - y_c;
-  SDL_RenderCopy(renderer, textureText, NULL, &rectangle4);
+  rectangleE.x = intrv * (dot_rows + 1.5) - x_c;
+  rectangleE.y = intrv * ( number + 1.3) - y_c;
+  SDL_RenderCopy(renderer, textureText, NULL, &rectangleE);
   SDL_DestroyTexture(textureText);
   SDL_FreeSurface(surfaceText);  
 }
@@ -793,14 +784,14 @@ int GetDotInput(Dots *dots, SDL_Color clr, int fxs, int fys)
 {
   if ( (event.button.button == SDL_BUTTON_LEFT) &&
      (event.type == SDL_MOUSEBUTTONUP) &&
-     ( (( (yMouse) % intrv) <= intrv / 3.0) || (((yMouse) % intrv) >= intrv * 2 / 3)) 
+     ( (( (yMouse) % intrv) <= intrv / 3.0)
+     || (((yMouse) % intrv) >= intrv * 2 / 3)) 
      && 
-     ( (( (xMouse) % intrv) <= intrv / 3.0) || (((xMouse) % intrv) >= intrv * 2 / 3))
-     
+     ( (( (xMouse) % intrv) <= intrv / 3.0)
+     || (((xMouse) % intrv) >= intrv * 2 / 3))
      && (xMouse >= 5.0 / 3 * intrv) && (yMouse >= 5.0 / 3 * intrv)
      && (xMouse + x_c <= (fxs + 5.0 / 3) * intrv)
-     && (yMouse + y_c <= (fys + 5.0 / 3) * intrv)
-     )
+     && (yMouse + y_c <= (fys + 5.0 / 3) * intrv))
     {  
       int coeff = round((xMouse + x_c) / float(intrv)) - 2 +
         + (round((yMouse + y_c) / float(intrv)) - 2) * fxs;
@@ -818,15 +809,15 @@ int GetDotInput(Dots *dots, SDL_Color clr, int fxs, int fys)
 void GetDotErase(Dots *dots, int fxs, int fys)
 {
   if ( (event.button.button == SDL_BUTTON_RIGHT) &&
-     (event.type == SDL_MOUSEBUTTONUP) &&
-     ( (( (yMouse) % intrv) <= intrv / 3.0) || (((yMouse) % intrv) >= intrv * 2 / 3)) 
-     && 
-     ( (( (xMouse) % intrv) <= intrv / 3.0) || (((xMouse) % intrv) >= intrv * 2 / 3))
-     
-     && (xMouse >= 5.0 / 3 * intrv) && (yMouse >= 5.0 / 3 * intrv)
-     && (xMouse + x_c <= (fxs + 5.0 / 3) * intrv)
-     && (yMouse + y_c <= (fys + 5.0 / 3) * intrv)
-     )
+       (event.type == SDL_MOUSEBUTTONUP) &&
+       ( (( (yMouse) % intrv) <= intrv / 3.0) 
+       || (((yMouse) % intrv) >= intrv * 2 / 3)) 
+       && 
+       ((( (xMouse) % intrv) <= intrv / 3.0)
+       || (((xMouse) % intrv) >= intrv * 2 / 3))
+       && (xMouse >= 5.0 / 3 * intrv) && (yMouse >= 5.0 / 3 * intrv)
+       && (xMouse + x_c <= (fxs + 5.0 / 3) * intrv)
+       && (yMouse + y_c <= (fys + 5.0 / 3) * intrv))
     {  
       int coeff = round((xMouse + x_c) / float(intrv)) - 2 +
         + (round((yMouse + y_c) / float(intrv)) - 2) * fxs;
@@ -851,7 +842,11 @@ void MainMenu()
   ButtonVector[4].keytrick = false;
 
   for (int i = 0; i < dots_menu_size; i++)
+  {
     dots[i].exist = false;
+    dots[i].visited = false;
+    dots[i].deadend = false;
+  }
   
   while (GameState == Menu)
   { 
@@ -880,17 +875,11 @@ void MainMenu()
       ButtonVector[0].keytrick = true;
 
     if ( (event.key.keysym.sym == SDLK_n) && (event.type == SDL_KEYUP) )
-    {
       GameState = SAP;
-      return;
-    }
 
-    if ( (event.button.button == SDL_BUTTON_LEFT) && (ButtonVector[0].IsSelected)
+    if ((event.button.button == SDL_BUTTON_LEFT) && (ButtonVector[0].IsSelected)
       && (event.type == SDL_MOUSEBUTTONUP)) 
-    {
       GameState = SAP;
-      return;
-    }
 
     if( (event.key.keysym.sym == SDLK_c) && (event.type == SDL_KEYDOWN) )
       ButtonVector[3].keytrick = true;
@@ -898,7 +887,7 @@ void MainMenu()
     if ( (event.key.keysym.sym == SDLK_c) && (event.type == SDL_KEYUP) )
       GameState = Credits;
 
-    if ( (event.button.button == SDL_BUTTON_LEFT) && (ButtonVector[3].IsSelected)
+    if ((event.button.button == SDL_BUTTON_LEFT) && (ButtonVector[3].IsSelected)
       && (event.type == SDL_MOUSEBUTTONUP)) 
       GameState = Credits;
 
@@ -918,7 +907,7 @@ void MainMenu()
     for (int i = 0; i < dots_menu_size; i++)
     {
       dots[i].visited = 0;
-      dots[i].is_deadend = false;
+      dots[i].deadend = false;
     }
     FindContour(dots, field_x_base, field_y_base);
     
@@ -942,7 +931,7 @@ void CreditsMenu()
   x_c = 0;
   y_c = 0;
   
-  while (1)
+  while (GameState == Credits)
   {
     ButtonVector[9].Update(mouse);
     mouse.Update();
@@ -952,26 +941,18 @@ void CreditsMenu()
       exit(0);
 
     if ((event.key.keysym.sym == SDLK_ESCAPE) && (event.type == SDL_KEYUP) )
-    {
       GameState = Menu;
-      return;
-    }
 
-    if ( (event.button.button == SDL_BUTTON_LEFT) && (ButtonVector[9].IsSelected)
+
+    if ((event.button.button == SDL_BUTTON_LEFT) && (ButtonVector[9].IsSelected)
       && (event.type == SDL_MOUSEBUTTONUP)) 
-    {
       GameState = Menu;
-      return;
-    }
 
     if( (event.key.keysym.sym == SDLK_b) && (event.type == SDL_KEYDOWN) )
       ButtonVector[9].keytrick = true;
 
     if ( (event.key.keysym.sym == SDLK_b) && (event.type == SDL_KEYUP) )
-    {
       GameState = Menu;
-      return;
-    }
 
     SDL_GetMouseState(&xMouse, &yMouse);
     GetDotInput(dots_c, cur_color, field_x_credits, field_y_credits);
@@ -1002,9 +983,13 @@ void SelectAmountOfPlayersMenu()
   ButtonVector[8].keytrick = false;
   ButtonVector[9].keytrick = false;
   for (int i = 0; i < dots_menu_size; i++)
+  {
     dots[i].exist = false;
+    dots[i].visited = false;
+    dots[i].deadend = false;
+  }
 
-  while (1)
+  while (GameState == SAP)
   {
     ButtonVector[5].Update(mouse);
     ButtonVector[6].Update(mouse);
@@ -1013,91 +998,58 @@ void SelectAmountOfPlayersMenu()
     ButtonVector[9].Update(mouse);
     mouse.Update();
     SDL_PollEvent(&event);
-    if (event.type == SDL_KEYDOWN && event.type == SDL_QUIT)
+    if ((event.type == SDL_KEYDOWN) && (event.type == SDL_QUIT) )
       exit(0);
 
-    if ( (event.button.button == SDL_BUTTON_LEFT) && (ButtonVector[9].IsSelected)
+    if ((event.button.button == SDL_BUTTON_LEFT) && (ButtonVector[9].IsSelected)
       && (event.type == SDL_MOUSEBUTTONUP)) 
-    {
       GameState = Menu;
-      return;
-    }
 
     if( (event.key.keysym.sym == SDLK_b) && (event.type == SDL_KEYDOWN) )
       ButtonVector[9].keytrick = true;
 
     if ( (event.key.keysym.sym == SDLK_b) && (event.type == SDL_KEYUP) )
-    {
       GameState = Menu;
-      return;
-    }
 
     if ((event.key.keysym.sym == SDLK_ESCAPE) && (event.type == SDL_KEYUP) )
-    {
       GameState = Menu;
-      return;
-    }
 
-    if ( (event.button.button == SDL_BUTTON_LEFT) && (ButtonVector[5].IsSelected) 
+    if ((event.button.button == SDL_BUTTON_LEFT) && (ButtonVector[5].IsSelected) 
       && (event.type == SDL_MOUSEBUTTONUP))
-    {
       GameState = ONEPM;
-      return;
-    }
 
     if ( (event.key.keysym.sym == SDLK_1) && (event.type == SDL_KEYUP) )
-    {
       GameState = ONEPM;
-      return;
-    }
 
     if( (event.key.keysym.sym == SDLK_1) && (event.type == SDL_KEYDOWN) )
       ButtonVector[5].keytrick = true;
 
-    if ( (event.button.button == SDL_BUTTON_LEFT) && (ButtonVector[6].IsSelected) 
+    if ((event.button.button == SDL_BUTTON_LEFT) && (ButtonVector[6].IsSelected) 
       && (event.type == SDL_MOUSEBUTTONUP))  
-    {
       GameState = TWOPM;
-      return;
-    }
 
     if ( (event.key.keysym.sym == SDLK_2) && (event.type == SDL_KEYUP) )
-    {
       GameState = TWOPM;
-      return;
-    }
 
     if( (event.key.keysym.sym == SDLK_2) && (event.type == SDL_KEYDOWN) )
       ButtonVector[6].keytrick = true;
 
-    if ( (event.button.button == SDL_BUTTON_LEFT) && (ButtonVector[7].IsSelected)
+    if ((event.button.button == SDL_BUTTON_LEFT) && (ButtonVector[7].IsSelected)
       && (event.type == SDL_MOUSEBUTTONUP))
-    {
       GameState = THREEPM;
-      return;
-    }
 
     if ( (event.key.keysym.sym == SDLK_3) && (event.type == SDL_KEYUP) )
-    {
       GameState = THREEPM;
-      return;
-    }
 
     if( (event.key.keysym.sym == SDLK_3) && (event.type == SDL_KEYDOWN) )
       ButtonVector[7].keytrick = true;
 
-    if ( (event.button.button == SDL_BUTTON_LEFT) && (ButtonVector[8].IsSelected)
+    if ((event.button.button == SDL_BUTTON_LEFT) && (ButtonVector[8].IsSelected)
       && (event.type == SDL_MOUSEBUTTONUP)) 
-    {
       GameState = FOURPM;
-      return;
-    }
 
     if ( (event.key.keysym.sym == SDLK_4) && (event.type == SDL_KEYUP) )
-    {
       GameState = FOURPM;
-      return;
-    }
 
     if( (event.key.keysym.sym == SDLK_4) && (event.type == SDL_KEYDOWN) )
       ButtonVector[8].keytrick = true;
@@ -1131,36 +1083,33 @@ void OnePlayerMenu()
 {
   ButtonVector[10].keytrick = false;
   for (int i = 0; i < dots_menu_size; i++)
+  {
     dots[i].exist = false;
+    dots[i].visited = false;
+    dots[i].deadend = false;
+  }
 
-  while (1)
+  while (GameState == ONEPM)
   {
     ButtonVector[10].Update(mouse);
     mouse.Update();
     SDL_PollEvent(&event);
-    if (event.type == SDL_KEYDOWN && event.type == SDL_QUIT)
+    if ((event.type == SDL_KEYDOWN) && (event.type == SDL_QUIT))
       exit(0);
 
     if (event.key.keysym.sym == SDLK_ESCAPE)
-    {
       GameState = Menu;
-      return;
-    }
+
     if( (event.key.keysym.sym == SDLK_b) && (event.type == SDL_KEYDOWN) )
       ButtonVector[10].keytrick = true;
 
     if ( (event.key.keysym.sym == SDLK_b) && (event.type == SDL_KEYUP) )
-    {
       GameState = SAP;
-      return;
-    }
 
-    if ( (ButtonVector[10].IsSelected) && (event.button.button == SDL_BUTTON_LEFT)
+    if ( (ButtonVector[10].IsSelected)
+       && (event.button.button == SDL_BUTTON_LEFT)
        && (event.type == SDL_MOUSEBUTTONUP))
-    {
       GameState = SAP;
-      return;
-    }
     
     SDL_GetMouseState(&xMouse,&yMouse);
 
@@ -1189,24 +1138,25 @@ void TwoPlayerMenu()
   ButtonVector[10].keytrick = false;
   ButtonVector[12].keytrick = false;
   for (int i = 0; i < dots_menu_size; i++)
+  {
     dots[i].exist = false;
+    dots[i].visited = false;
+    dots[i].deadend = false;
+  }
 
-  while (1)
+  while (GameState == TWOPM)
   {
     mouse.Update();
     ButtonVector[10].Update(mouse);
     ButtonVector[12].Update(mouse);
-    P21.Update(mouse);
-    P22.Update(mouse);
+    ClrButtonVector[0].Update(mouse);
+    ClrButtonVector[1].Update(mouse);
     SDL_PollEvent(&event);
-    if (event.type == SDL_KEYDOWN && event.type == SDL_QUIT)
+    if ( (event.type == SDL_KEYDOWN) && (event.type == SDL_QUIT) )
       exit(0);
 
-    if (event.type == SDL_KEYDOWN && event.key.keysym.sym == SDLK_ESCAPE)
-    {
+    if ((event.type == SDL_KEYDOWN) && (event.key.keysym.sym == SDLK_ESCAPE))
       GameState = Menu;
-      return;
-    }
 
     if ( (event.key.keysym.sym == SDLK_b) && (event.type == SDL_KEYUP) )
       ButtonVector[10].keytrick = false;
@@ -1214,12 +1164,11 @@ void TwoPlayerMenu()
     if ( (event.key.keysym.sym == SDLK_b) && (event.type == SDL_KEYDOWN) )
       ButtonVector[10].keytrick = true;
 
-    if ( (event.button.button == SDL_BUTTON_LEFT) && (ButtonVector[10].IsSelected) 
+    if ( (event.button.button == SDL_BUTTON_LEFT)
+      && (ButtonVector[10].IsSelected) 
       && (event.type == SDL_MOUSEBUTTONUP))
-    {
       GameState = SAP;
-      return;
-    }
+
 
     if ( (event.key.keysym.sym == SDLK_c) && (event.type == SDL_KEYDOWN) )
       ButtonVector[12].keytrick = true;
@@ -1228,30 +1177,29 @@ void TwoPlayerMenu()
     {
       pa_back = 2;  
       GameState = GSM;
-      return;
     }
 
-    if ( (event.button.button == SDL_BUTTON_LEFT) && (ButtonVector[12].IsSelected)
+    if ( (event.button.button == SDL_BUTTON_LEFT)
+      && (ButtonVector[12].IsSelected)
       && (event.type == SDL_MOUSEBUTTONUP)) 
     {
       pa_back = 2;  
       GameState = GSM;
-      return;
     }
 
-    if ( (!P21.IsSelected) && (!P22.IsSelected) )
+    if ((!ClrButtonVector[0].IsSelected) && (!ClrButtonVector[1].IsSelected))
       FieldColor();
 
-    if (P21.IsSelected)
+    if (ClrButtonVector[0].IsSelected)
     { 
-      P21.ChangeColor();
-      cur_color = P21.clr;
+      ClrButtonVector[0].ChangeColor();
+      cur_color = ClrButtonVector[0].clr;
     }
 
-    if (P22.IsSelected)
+    if (ClrButtonVector[1].IsSelected)
     { 
-      P22.ChangeColor();
-      cur_color = P22.clr;
+      ClrButtonVector[1].ChangeColor();
+      cur_color = ClrButtonVector[1].clr;
     }
 
     SDL_GetMouseState(&xMouse,&yMouse);
@@ -1266,8 +1214,8 @@ void TwoPlayerMenu()
     GetDotErase(dots, field_x_base, field_y_base);
     DrawDots(dots, dots_menu_size, field_x_size);
 
-    P21.Draw();
-    P22.Draw();
+    ClrButtonVector[0].Draw();
+    ClrButtonVector[1].Draw();
 
     LabelVector[3].Draw();
     LabelVector[4].Draw();
@@ -1285,25 +1233,26 @@ void ThreePlayerMenu()
   ButtonVector[10].keytrick = false;
   ButtonVector[12].keytrick = false;
   for (int i = 0; i < dots_menu_size; i++)
+  {
     dots[i].exist = false;
+    dots[i].visited = false;
+    dots[i].deadend = false;
+  }
 
-  while (1)
+  while (GameState == THREEPM)
   {
     mouse.Update();
     ButtonVector[10].Update(mouse);
     ButtonVector[12].Update(mouse);
-    P31.Update(mouse);
-    P32.Update(mouse);
-    P33.Update(mouse);
+    ClrButtonVector[2].Update(mouse);
+    ClrButtonVector[3].Update(mouse);
+    ClrButtonVector[4].Update(mouse);
     SDL_PollEvent(&event);
-    if (event.type == SDL_KEYDOWN && event.type == SDL_QUIT)
+    if ( (event.type == SDL_KEYDOWN) && (event.type == SDL_QUIT) )
       exit(0);
 
     if (event.type == SDL_KEYDOWN && event.key.keysym.sym == SDLK_ESCAPE)
-    {
       GameState = Menu;
-      return;
-    }  
 
     if ( (event.key.keysym.sym == SDLK_b) && (event.type == SDL_KEYUP) )
       ButtonVector[10].keytrick = false;
@@ -1311,50 +1260,48 @@ void ThreePlayerMenu()
     if( (event.key.keysym.sym == SDLK_b) && (event.type == SDL_KEYDOWN) )
       ButtonVector[10].keytrick = true;
 
-    if ( (event.button.button == SDL_BUTTON_LEFT) && (ButtonVector[10].IsSelected)
+    if ( (event.button.button == SDL_BUTTON_LEFT)
+      && (ButtonVector[10].IsSelected)
       && (event.type == SDL_MOUSEBUTTONUP))
-    {
       GameState = SAP;
-      return;
-    }  
 
     if ((event.key.keysym.sym == SDLK_c) && (event.type == SDL_KEYUP) )
     {
       pa_back = 3;  
       GameState = GSM;
-      return;
     }
 
     if ( (event.key.keysym.sym == SDLK_c) && (event.type == SDL_KEYDOWN) )
       ButtonVector[12].keytrick = true;
 
-    if ( (event.button.button == SDL_BUTTON_LEFT) && (ButtonVector[12].IsSelected)
+    if ( (event.button.button == SDL_BUTTON_LEFT)
+      && (ButtonVector[12].IsSelected)
       && (event.type == SDL_MOUSEBUTTONUP)) 
     {
       pa_back = 3;  
       GameState = GSM;
-      return;
     }
 
-    if ( (!P31.IsSelected) && (!P32.IsSelected) && (!P33.IsSelected)  )
+    if ((!ClrButtonVector[2].IsSelected) && (!ClrButtonVector[3].IsSelected)
+      && (!ClrButtonVector[4].IsSelected)  )
       FieldColor();
 
-    if (P31.IsSelected)
+    if (ClrButtonVector[2].IsSelected)
     { 
-      P31.ChangeColor();
-      cur_color = P31.clr;
+      ClrButtonVector[2].ChangeColor();
+      cur_color = ClrButtonVector[2].clr;
     }
 
-    if (P32.IsSelected)
+    if (ClrButtonVector[3].IsSelected)
     { 
-      P32.ChangeColor();
-      cur_color = P32.clr;
+      ClrButtonVector[3].ChangeColor();
+      cur_color = ClrButtonVector[3].clr;
     }
 
-    if (P33.IsSelected)
+    if (ClrButtonVector[4].IsSelected)
     { 
-      P33.ChangeColor();
-      cur_color = P33.clr;
+      ClrButtonVector[4].ChangeColor();
+      cur_color = ClrButtonVector[4].clr;
     }
 
     SDL_GetMouseState(&xMouse,&yMouse);
@@ -1369,9 +1316,9 @@ void ThreePlayerMenu()
     GetDotErase(dots, field_x_base, field_y_base);
     DrawDots(dots, dots_menu_size, field_x_size);
 
-    P31.Draw();
-    P32.Draw();
-    P33.Draw();
+    ClrButtonVector[2].Draw();
+    ClrButtonVector[3].Draw();
+    ClrButtonVector[4].Draw();
     LabelVector[3].Draw();
     LabelVector[4].Draw();
     LabelVector[5].Draw();
@@ -1388,27 +1335,28 @@ void FourPlayerMenu()
   ButtonVector[10].keytrick = false;
   ButtonVector[12].keytrick = false;
   for (int i = 0; i < dots_menu_size; i++)
+  {
     dots[i].exist = false;
+    dots[i].visited = false;
+    dots[i].deadend = false;
+  }
 
-  while (1)
+  while (GameState == FOURPM)
   {
     mouse.Update();
     ButtonVector[10].Update(mouse);
     ButtonVector[12].Update(mouse);
-    P41.Update(mouse);
-    P42.Update(mouse);
-    P43.Update(mouse);
-    P44.Update(mouse);
+    ClrButtonVector[5].Update(mouse);
+    ClrButtonVector[6].Update(mouse);
+    ClrButtonVector[7].Update(mouse);
+    ClrButtonVector[8].Update(mouse);
 
     SDL_PollEvent(&event);
-    if (event.type == SDL_KEYDOWN && event.type == SDL_QUIT)
+    if ( (event.type == SDL_KEYDOWN) && (event.type == SDL_QUIT) )
       exit(0);
 
     if (event.type == SDL_KEYDOWN && event.key.keysym.sym == SDLK_ESCAPE)
-    {  
       GameState = Menu;
-      return;
-    }
 
     if ( (event.key.keysym.sym == SDLK_b) && (event.type == SDL_KEYUP) )
       ButtonVector[10].keytrick = false;
@@ -1416,18 +1364,15 @@ void FourPlayerMenu()
     if( (event.key.keysym.sym == SDLK_b) && (event.type == SDL_KEYDOWN) )
       ButtonVector[10].keytrick = true;
 
-    if ( (event.button.button == SDL_BUTTON_LEFT) && (ButtonVector[10].IsSelected)
+    if ( (event.button.button == SDL_BUTTON_LEFT)
+      && (ButtonVector[10].IsSelected)
       && (event.type == SDL_MOUSEBUTTONUP))
-    {  
       GameState = SAP;
-      return;
-    }
 
     if ((event.key.keysym.sym == SDLK_c) && (event.type == SDL_KEYUP) )
     {
       pa_back = 4;  
       GameState = GSM;
-      return;
     }
 
     if ( (event.key.keysym.sym == SDLK_c) && (event.type == SDL_KEYDOWN) )
@@ -1438,34 +1383,34 @@ void FourPlayerMenu()
     {
       pa_back = 4;  
       GameState = GSM;
-      return;
     }
 
-    if (  (!P41.IsSelected) && (!P42.IsSelected) && (!P43.IsSelected))
+    if ((!ClrButtonVector[5].IsSelected) && (!ClrButtonVector[6].IsSelected)
+      && (!ClrButtonVector[7].IsSelected))
       FieldColor();
 
-    if (P41.IsSelected)
+    if (ClrButtonVector[5].IsSelected)
     { 
-      P41.ChangeColor();
-      cur_color = P41.clr;
+      ClrButtonVector[5].ChangeColor();
+      cur_color = ClrButtonVector[5].clr;
     }
 
-    if (P42.IsSelected)
+    if (ClrButtonVector[6].IsSelected)
     { 
-      P42.ChangeColor();
-      cur_color = P42.clr;
+      ClrButtonVector[6].ChangeColor();
+      cur_color = ClrButtonVector[6].clr;
     }
 
-    if (P43.IsSelected)
+    if (ClrButtonVector[7].IsSelected)
     { 
-      P43.ChangeColor();
-      cur_color = P43.clr;
+      ClrButtonVector[7].ChangeColor();
+      cur_color = ClrButtonVector[7].clr;
     }
 
-    if (P44.IsSelected)
+    if (ClrButtonVector[8].IsSelected)
     { 
-      P44.ChangeColor();
-      cur_color = P44.clr;
+      ClrButtonVector[8].ChangeColor();
+      cur_color = ClrButtonVector[8].clr;
     }
 
     SDL_GetMouseState(&xMouse,&yMouse);
@@ -1485,10 +1430,10 @@ void FourPlayerMenu()
     LabelVector[5].Draw();
     ButtonVector[10].Draw();
     ButtonVector[12].Draw();
-    P41.Draw();
-    P42.Draw();
-    P43.Draw();
-    P44.Draw();
+    ClrButtonVector[5].Draw();
+    ClrButtonVector[6].Draw();
+    ClrButtonVector[7].Draw();
+    ClrButtonVector[8].Draw();
     mouse.DrawCircle(cur_color);
     
     SDL_RenderPresent(renderer);
@@ -1497,44 +1442,58 @@ void FourPlayerMenu()
 
 void GameSizeMenu()
 {
-  game_x_size = 30;
-  game_y_size = 30;
-  ButtonVector[11].keytrick = false;
+  SDL_Surface *surfaceText;
+  SDL_Surface *surfaceText2;
+  SDL_Surface *surfaceText3;
+  SDL_Texture *textureText;
+  SDL_Texture *textureText2;
+  SDL_Texture *textureText3;
+  ButtonVector[10].keytrick = false;
   ButtonVector[12].keytrick = false;
-  for (int i = 0; i < dots_menu_size; i++)
-    dots[i].exist = false;
 
-  while (1)
+  SDL_Rect rectangle;
+  SDL_Rect rectangle2;
+  SDL_Rect rectangle3;
+  rectangle_w = ScWidth / 32;
+  rectangle_h = ScWidth / 18;
+
+  rectangle.w = rectangle_w * 2;
+  rectangle.h = rectangle_h * 2;
+  rectangle.x = ScWidth * 1 / 3 - rectangle.w / 2;
+  rectangle.y = vo * 3;
+
+  rectangle2.w = rectangle_w * 2;
+  rectangle2.h = rectangle_h * 2;
+  rectangle2.x = ScWidth * 2 / 3 - rectangle2.w / 2;
+  rectangle2.y = vo * 3;
+
+  rectangle3.w = rectangle_w * 2;
+  rectangle3.h = rectangle_h * 2;
+  rectangle3.x = ScWidth * 1 / 2 - rectangle3.w / 2;
+  rectangle3.y = vo * 3;
+
+  while (GameState == GSM)
   {
     mouse.Update();
-    ButtonVector[11].Update(mouse);
+    ButtonVector[10].Update(mouse);
     ButtonVector[12].Update(mouse);
 
     SDL_PollEvent(&event);
-    if (event.type == SDL_KEYDOWN && event.type == SDL_QUIT)
+    if ( (event.type == SDL_KEYDOWN) && (event.type == SDL_QUIT) )
       exit(0);
 
     if (event.type == SDL_KEYDOWN && event.key.keysym.sym == SDLK_ESCAPE)
-    {  
       GameState = Menu;
-      return;
-    }
 
     if ((event.key.keysym.sym == SDLK_c) && (event.type == SDL_KEYUP) )
-    {
       GameState = GRM;
-      return;
-    }
 
     if ( (event.button.button == SDL_BUTTON_LEFT) && (ButtonVector[12].IsSelected)
       && (event.type == SDL_MOUSEBUTTONUP)) 
-    {
       GameState = GRM;
-      return;
-    }
 
     if( (event.key.keysym.sym == SDLK_b) && (event.type == SDL_KEYDOWN) )
-      ButtonVector[11].keytrick = true;
+      ButtonVector[10].keytrick = true;
 
     if ( (event.key.keysym.sym == SDLK_c) && (event.type == SDL_KEYDOWN) )
       ButtonVector[12].keytrick = true;
@@ -1546,27 +1505,26 @@ void GameSizeMenu()
         case 1:
         {
           GameState = ONEPM;
-          return;
+          break;
         }  
         case 2:
         {
           GameState = TWOPM;
-          return;
+          break;
         } 
         case 3:
         {
           GameState = THREEPM;
-          return;
+          break;
         } 
         case 4:
         {
-          GameState = THREEPM;
-          return;
+          GameState = FOURPM;
         } 
       }
     }
 
-    if ( (event.button.button == SDL_BUTTON_LEFT) && (ButtonVector[11].IsSelected)
+    if ( (event.button.button == SDL_BUTTON_LEFT) && (ButtonVector[10].IsSelected)
       && (event.type == SDL_MOUSEBUTTONUP)) 
    {
       switch (pa_back)
@@ -1574,46 +1532,58 @@ void GameSizeMenu()
         case 1:
         {
           GameState = ONEPM;
-          return;
+          break;
         }  
         case 2:
         {
           GameState = TWOPM;
-          return;
+          break;
         } 
         case 3:
         {
           GameState = THREEPM;
-          return;
+          break;
         } 
         case 4:
         {
-          GameState = THREEPM;
-          return;
+          GameState = FOURPM;
         } 
       }
     }
+    
+    surfaceText3 = TTF_RenderText_Solid(my_Font, "x", {255, 255, 0});
+    textureText3 = SDL_CreateTextureFromSurface(renderer, surfaceText3);
 
     string temp_str = to_string(game_x_size);
     field_x = (char*) temp_str.c_str();
-    surfaceText = TTF_RenderText_Solid(my_Font, field_x, {255, 255, 0});
+    surfaceText = TTF_RenderText_Solid(my_Font, field_x, {180, 255, 100});
     textureText = SDL_CreateTextureFromSurface(renderer, surfaceText);
-    
-    if ( (SDL_HasIntersection(&rectangle, &mouse.point)) &&
-        (event.type == SDL_KEYDOWN) &&
-        ((event.key.keysym.sym == SDLK_w) || (event.key.keysym.sym == SDLK_UP)))
-      game_x_size++;
-
-    if ( (SDL_HasIntersection(&rectangle, &mouse.point))
-      && (event.type == SDL_KEYDOWN) &&
-      ((event.key.keysym.sym == SDLK_s) || (event.key.keysym.sym == SDLK_DOWN)))
-      game_x_size--;
 
     temp_str = to_string(game_y_size);
     field_y = (char*) temp_str.c_str();
-    surfaceText2 = TTF_RenderText_Solid(my_Font, field_y, {255, 255, 0});
+    surfaceText2 = TTF_RenderText_Solid(my_Font, field_y, {180, 255, 100});
     textureText2 = SDL_CreateTextureFromSurface(renderer, surfaceText2);
     
+    if ( (SDL_HasIntersection(&rectangle, &mouse.point)) &&
+        (event.type == SDL_KEYDOWN) &&
+        (event.key.keysym.sym == SDLK_w))
+      game_x_size++;
+
+    if ( (SDL_HasIntersection(&rectangle, &mouse.point)) &&
+        (event.type == SDL_KEYDOWN) &&
+        (event.key.keysym.sym == SDLK_UP))
+      game_x_size += 10;
+
+    if ( (SDL_HasIntersection(&rectangle, &mouse.point))
+      && (event.type == SDL_KEYDOWN) &&
+      (event.key.keysym.sym == SDLK_s))
+      game_x_size--;
+
+    if ( (SDL_HasIntersection(&rectangle, &mouse.point))
+      && (event.type == SDL_KEYDOWN) &&
+      (event.key.keysym.sym == SDLK_DOWN))
+      game_x_size -= 10;
+
     if ( (SDL_HasIntersection(&rectangle2, &mouse.point))
       && (event.type == SDL_KEYDOWN) &&
       ((event.key.keysym.sym == SDLK_w) || (event.key.keysym.sym == SDLK_UP)))
@@ -1621,8 +1591,18 @@ void GameSizeMenu()
 
     if ( (SDL_HasIntersection(&rectangle2, &mouse.point))
       && (event.type == SDL_KEYDOWN) &&
-      ((event.key.keysym.sym == SDLK_s) || (event.key.keysym.sym == SDLK_DOWN)))
+      (event.key.keysym.sym == SDLK_UP))
+      game_y_size += 10;
+
+    if ( (SDL_HasIntersection(&rectangle2, &mouse.point))
+      && (event.type == SDL_KEYDOWN) &&
+      (event.key.keysym.sym == SDLK_s))
       game_y_size--;
+
+    if ( (SDL_HasIntersection(&rectangle2, &mouse.point))
+      && (event.type == SDL_KEYDOWN) &&
+      (event.key.keysym.sym == SDLK_DOWN))
+      game_y_size -= 10;
 
     if (game_y_size < 5)
       game_y_size = 5;
@@ -1669,106 +1649,208 @@ void GameSizeMenu()
     SDL_FreeSurface(surfaceText);
     SDL_DestroyTexture(textureText2);
     SDL_FreeSurface(surfaceText2);
+    SDL_DestroyTexture(textureText3);
+    SDL_FreeSurface(surfaceText3);
 
-    ButtonVector[11].Draw();
+    ButtonVector[10].Draw();
+    ButtonVector[12].Draw();
     LabelVector[6].Draw();
     LabelVector[7].Draw();
-    ButtonVector[12].Draw();
     mouse.DrawCircle(cur_color);
     SDL_RenderPresent(renderer);
   }
+
+
 }
 
 void GameRuleMenu()
 {
-  ButtonVector[10].keytrick = false;
+  SDL_Surface *surfaceText4;
+  SDL_Surface *surfaceText5;
+  SDL_Texture *textureText4;
+  SDL_Texture *textureText5;
+  SDL_Rect rectangle4;
+  SDL_Rect rectangle5;
+  rectangle4.w = LabelVector[9].drect.h;
+  rectangle4.h = LabelVector[9].drect.h;
+  rectangle4.x = ScWidth * 4 / 9 + LabelVector[9].drect.w;
+  rectangle4.y = vo * 4;
+
+  rectangle5.w = LabelVector[10].drect.h;
+  rectangle5.h = LabelVector[10].drect.h;
+  rectangle5.x = ScWidth * 4 / 9 + LabelVector[10].drect.w;
+  rectangle5.y = vo * 5;
+
+  ButtonVector[11].keytrick = false;
   ButtonVector[13].keytrick = false;
   ButtonVector[14].keytrick = false;
 
-  while (1)
+  while (GameState == GRM)
   {
     mouse.Update();
-    ButtonVector[10].Update(mouse);
+    ButtonVector[11].Update(mouse);
     ButtonVector[13].Update(mouse);
     ButtonVector[14].Update(mouse); 
 
     SDL_PollEvent(&event);
-    if (event.type == SDL_KEYDOWN && event.type == SDL_QUIT)
+    if ( (event.type == SDL_KEYDOWN) && (event.type == SDL_QUIT) )
       exit(0);
 
     if ( (event.key.keysym.sym == SDLK_b) && (event.type == SDL_KEYUP) )
-    {  
       GameState = GSM;
-      return;
-    }
 
     if( (event.key.keysym.sym == SDLK_b) && (event.type == SDL_KEYDOWN) )
-      ButtonVector[10].keytrick = true;
+      ButtonVector[11].keytrick = true;
 
-    if ( (event.button.button == SDL_BUTTON_LEFT) && (ButtonVector[10].IsSelected)
+    if ( (event.button.button == SDL_BUTTON_LEFT)
+      && (ButtonVector[11].IsSelected)
       && (event.type == SDL_MOUSEBUTTONUP)) 
-    {  
       GameState = GSM;
-      return;
-    }
 
-    if (event.key.keysym.sym == SDLK_ESCAPE)
-    {  
+    if ((event.type == SDL_KEYDOWN) && (event.key.keysym.sym == SDLK_ESCAPE))
       GameState = Menu;
-      return;
-    }
 
     if ((event.key.keysym.sym == SDLK_t) && (event.type == SDL_KEYUP) )
-    {  
+    { 
+      classic = false; 
       GameState = Game;
-      return;
     }
 
-    if ( (event.button.button == SDL_BUTTON_LEFT) && (ButtonVector[14].IsSelected)
+    if ( (event.button.button == SDL_BUTTON_LEFT)
+      && (ButtonVector[14].IsSelected)
       && (event.type == SDL_MOUSEBUTTONUP)) 
-    {  
+    { 
+      classic = false; 
       GameState = Game;
-      return;
     }
 
     if ( (event.key.keysym.sym == SDLK_t) && (event.type == SDL_KEYDOWN) )
       ButtonVector[14].keytrick = true;
 
-    if ((event.key.keysym.sym == SDLK_d) && (event.type == SDL_KEYUP) )
-    {  
+    if ((event.key.keysym.sym == SDLK_c) && (event.type == SDL_KEYUP) )
       GameState = Game;
-      return;
-    }
 
-    if ( (event.button.button == SDL_BUTTON_LEFT) && (ButtonVector[13].IsSelected)
+    if ( (event.button.button == SDL_BUTTON_LEFT)
+      && (ButtonVector[13].IsSelected)
       && (event.type == SDL_MOUSEBUTTONUP)) 
-    {  
       GameState = Game;
-      return;
-    }
 
-    if ( (event.key.keysym.sym == SDLK_d) && (event.type == SDL_KEYDOWN) )
+    if ( (event.key.keysym.sym == SDLK_c) && (event.type == SDL_KEYDOWN) )
       ButtonVector[13].keytrick = true;
 
-    if ( (event.key.keysym.sym == SDLK_b) && (event.type == SDL_KEYUP) )
-    {  
+    if ( (event.key.keysym.sym == SDLK_b) && (event.type == SDL_KEYUP) )  
       GameState = GSM;
-      return;
-    }
+
+    string temp_str;
+    if (maxdotamount <= 0)
+      temp_str = "~";
+    else 
+      temp_str = to_string(maxdotamount);
+    field_x = (char*) temp_str.c_str();
+    surfaceText4 = TTF_RenderText_Solid(my_Font, field_x, {180, 255, 100});
+    textureText4 = SDL_CreateTextureFromSurface(renderer, surfaceText4);
+
+    if (maxeatendots <= 0)
+      temp_str = "~";
+    else 
+      temp_str = to_string(maxeatendots);
+    field_y = (char*) temp_str.c_str();
+    surfaceText5 = TTF_RenderText_Solid(my_Font, field_y, {180, 255, 100});
+    textureText5 = SDL_CreateTextureFromSurface(renderer, surfaceText5);
+    
+    if ( (SDL_HasIntersection(&rectangle4, &mouse.point)) &&
+        (event.type == SDL_KEYDOWN) &&
+        ((event.key.keysym.sym == SDLK_w) || (event.key.keysym.sym == SDLK_UP)))
+      maxdotamount++;
+
+    if ( (SDL_HasIntersection(&rectangle4, &mouse.point)) &&
+        (event.type == SDL_KEYDOWN) &&
+        (event.key.keysym.sym == SDLK_UP))
+      maxdotamount += 10;
+
+    if ( (SDL_HasIntersection(&rectangle4, &mouse.point))
+      && (event.type == SDL_KEYDOWN) &&
+      (event.key.keysym.sym == SDLK_s))
+      maxdotamount--;
+
+    if ( (SDL_HasIntersection(&rectangle4, &mouse.point))
+      && (event.type == SDL_KEYDOWN) &&
+      (event.key.keysym.sym == SDLK_DOWN))
+      maxdotamount -= 10 ;
+
+    if ( (SDL_HasIntersection(&rectangle5, &mouse.point))
+      && (event.type == SDL_KEYDOWN) &&
+      (event.key.keysym.sym == SDLK_w))
+      maxeatendots++;
+
+    if ( (SDL_HasIntersection(&rectangle5, &mouse.point))
+      && (event.type == SDL_KEYDOWN) &&
+      (event.key.keysym.sym == SDLK_UP))
+      maxeatendots += 10;
+
+    if ( (SDL_HasIntersection(&rectangle5, &mouse.point))
+      && (event.type == SDL_KEYDOWN) &&
+      (event.key.keysym.sym == SDLK_s))
+      maxeatendots--;
+
+    if ( (SDL_HasIntersection(&rectangle5, &mouse.point))
+      && (event.type == SDL_KEYDOWN) &&
+      (event.key.keysym.sym == SDLK_DOWN))
+      maxeatendots -= 10;
+
+
+    if (maxdotamount < 0)
+      maxdotamount = 0;
+
+    if (maxdotamount > 5000)
+      maxdotamount = 5000;
+
+    if (maxeatendots < 0)
+      maxeatendots = 0;
+
+    if (maxeatendots > 700)
+      maxeatendots = 700;
+
+    if (maxdotamount >= 100)
+      rectangle4.w = rectangle_w * 3;
+    else if (maxdotamount < 10)
+      rectangle4.w = rectangle_w;
+    else
+      rectangle4.w = rectangle_w * 2;
+
+    if (maxeatendots >= 100) 
+      rectangle5.w = rectangle_w * 3;
+    else if (maxeatendots < 10)
+      rectangle5.w = rectangle_w;
+    else
+      rectangle5.w = rectangle_w * 2;
 
     SDL_GetMouseState(&xMouse,&yMouse);
     SDL_SetRenderDrawColor(renderer, red, green, blue, SDL_ALPHA_OPAQUE);
     SDL_RenderClear(renderer);
     SDL_SetRenderDrawColor(renderer, 0, 0, 0, SDL_ALPHA_OPAQUE);
     DrawField(game_x_size, game_y_size);
-    MoveBoard(game_x_size, game_y_size);
+    if (!SDL_HasIntersection(&rectangle4, &mouse.point) && 
+      !SDL_HasIntersection(&rectangle5, &mouse.point))
+      MoveBoard(game_x_size, game_y_size);
     Zoom();
     EnumerateField(game_y_size, game_x_size, my_Font);
 
-    ButtonVector[10].Draw();
+    SDL_RenderCopy(renderer, textureText4, NULL, &rectangle4);
+    SDL_RenderCopy(renderer, textureText5, NULL, &rectangle5);
+
+    SDL_DestroyTexture(textureText4);
+    SDL_FreeSurface(surfaceText4);
+    SDL_DestroyTexture(textureText5);
+    SDL_FreeSurface(surfaceText5);
+
+    ButtonVector[11].Draw();
     ButtonVector[13].Draw();
     ButtonVector[14].Draw();
+    LabelVector[7].Draw();
     LabelVector[8].Draw();
+    LabelVector[9].Draw();
+    LabelVector[10].Draw();
     mouse.DrawCircle(cur_color);
     SDL_RenderPresent(renderer);
   }
@@ -1781,6 +1863,8 @@ void GameItself()
   for (int i = 0; i < dots_game_size; i++)
   {
     dots_g[i].exist = false;
+    dots_g[i].visited = 0;
+    dots_g[i].deadend = false;
   }
   x_c = 0;
   y_c = 0;
@@ -1788,13 +1872,13 @@ void GameItself()
   switch (pa_back)
   {
     case 2:
-      cur_color = P21.clr;
+      cur_color = ClrButtonVector[0].clr;
       break;
     case 3:
-      cur_color = P31.clr;
+      cur_color = ClrButtonVector[2].clr;
       break;
     case 4:
-      cur_color = P41.clr;
+      cur_color = ClrButtonVector[5].clr;
   }
 
   while (1)
@@ -1814,32 +1898,32 @@ void GameItself()
       {
         case 2:
         {
-          if (cur_color == P21.clr)
-            cur_color = P22.clr;
+          if (cur_color == ClrButtonVector[0].clr)
+            cur_color = ClrButtonVector[1].clr;
           else
-            cur_color = P21.clr;
+            cur_color = ClrButtonVector[0].clr;
           break;
         }
         case 3:
         {
-          if (cur_color == P31.clr)
-            cur_color = P32.clr;
-          else if (cur_color == P32.clr)
-            cur_color = P33.clr;
+          if (cur_color == ClrButtonVector[2].clr)
+            cur_color = ClrButtonVector[3].clr;
+          else if (cur_color == ClrButtonVector[3].clr)
+            cur_color = ClrButtonVector[4].clr;
           else
-            cur_color = P31.clr;
+            cur_color = ClrButtonVector[2].clr;
           break;
         }
         case 4:
         {
-          if (cur_color == P41.clr)
-            cur_color = P42.clr;
-          else if (cur_color == P42.clr)
-            cur_color = P43.clr;
-          else if (cur_color == P43.clr)
-            cur_color = P44.clr;
+          if (cur_color == ClrButtonVector[5].clr)
+            cur_color = ClrButtonVector[6].clr;
+          else if (cur_color == ClrButtonVector[6].clr)
+            cur_color = ClrButtonVector[7].clr;
+          else if (cur_color == ClrButtonVector[7].clr)
+            cur_color = ClrButtonVector[8].clr;
           else
-            cur_color = P41.clr;
+            cur_color = ClrButtonVector[5].clr;
           break;
         }
       }
@@ -1890,11 +1974,9 @@ int main(int argc, char *argv[])
 /////////////////////////////////////Some variables/////////////////////////////
   cur_color = white;
   mouse.GiveColor(white);
-  mouse.circle_size = 6;
-
-  const int vo = ScHeight / 8;  //vertical offset
-  const int ho = ScWidth / 5;  //horizontal offset
-  bool dots_conqured_victory = false;
+  mouse.circle_size = 9;
+  vo = ScHeight / 8;  //vertical offset
+  ho = ScWidth / 5;  //horizontal offset
 
 /////////////////////////////////////Initializing SDL///////////////////////////
   window = SDL_CreateWindow("Dots", 0, 0, ScWidth, ScHeight,
@@ -1908,7 +1990,7 @@ int main(int argc, char *argv[])
     return 3;
   }
 
-//////////////////////////////SDL_TTF for GSM///////////////////////////////////
+//////////////////////////////Initializing SDL_TTF//////////////////////////////
   if (TTF_Init() == -1)
     cout << "Could not initialize SDL2_ttf, error:" << TTF_GetError() << endl;
   else
@@ -1921,38 +2003,6 @@ int main(int argc, char *argv[])
     exit(1);
   }
 
-  string temp_str = to_string(field_x_size);
-  field_x = (char*) temp_str.c_str();
-  rectangle_w = ScWidth / 32;
-  rectangle_h = ScWidth / 18;
-  SDL_Surface* surfaceText = TTF_RenderText_Solid(my_Font, field_x,
-    {255, 255, 0});
-  textureText = SDL_CreateTextureFromSurface(renderer, surfaceText);
-  rectangle.w = rectangle_w * 2;
-  rectangle.h = rectangle_h * 2;
-  rectangle.x = ScWidth * 1 / 3 - rectangle.w / 2;
-  rectangle.y = vo * 3;
-
-  temp_str = to_string(field_y_size);
-  field_y = (char*) temp_str.c_str();
-  surfaceText2 = TTF_RenderText_Solid(my_Font, field_y, {255, 255, 0});
-  SDL_Texture* textureText2 = SDL_CreateTextureFromSurface
-    (renderer, surfaceText2);
-  rectangle2.w = rectangle_w * 2;
-  rectangle2.h = rectangle_h * 2;
-  rectangle2.x = ScWidth * 2 / 3 - rectangle2.w / 2;
-  rectangle2.y = vo * 3;
-
-  SDL_Surface* surfaceText3 = TTF_RenderText_Solid(my_Font, "x",
-    {255, 255, 0});
-  textureText3 = SDL_CreateTextureFromSurface(renderer, surfaceText3);
-  SDL_FreeSurface(surfaceText3);
-
-  rectangle3.w = rectangle_w * 2;
-  rectangle3.h = rectangle_h * 2;
-  rectangle3.x = ScWidth * 1 / 2 - rectangle3.w / 2;
-  rectangle3.y = vo * 3;
-
 /////////////////All buttons and labels are here////////////////////////////////  
   const char* New = "images/new.png";
   Button NewButton(New, ho, vo, 100, 400);
@@ -1960,193 +2010,261 @@ int main(int argc, char *argv[])
   NewButton.drect.x = ScWidth / 2 - NewButton.drect.w / 2; 
   NewButton.drect.y = vo;
   ButtonVector.push_back(NewButton);  //0 - index
+  NewButton.~Button(); 
 
   const char* load = "images/load.png";
-  Button loadButton(load, ho, vo, 100, 400);
-  loadButton.srect.y = 0;
-  loadButton.drect.x = ScWidth / 2 - loadButton.drect.w / 2; 
-  loadButton.drect.y = vo * 2;
-  ButtonVector.push_back(loadButton);  //1 - index
+  Button LoadButton(load, ho, vo, 100, 400);
+  LoadButton.srect.y = 0;
+  LoadButton.drect.x = ScWidth / 2 - LoadButton.drect.w / 2; 
+  LoadButton.drect.y = vo * 2;
+  ButtonVector.push_back(LoadButton);  //1 - index
+  LoadButton.~Button(); 
 
   const char* helpB = "images/help.png";
-  Button helpButton(helpB, ho, vo, 100, 400);
-  helpButton.srect.y = 0;
-  helpButton.drect.x = ScWidth / 2 - helpButton.drect.w / 2; 
-  helpButton.drect.y = vo * 3;
-  ButtonVector.push_back(helpButton);  //2 - index
+  Button HelpButton(helpB, ho, vo, 100, 400);
+  HelpButton.srect.y = 0;
+  HelpButton.drect.x = ScWidth / 2 - HelpButton.drect.w / 2; 
+  HelpButton.drect.y = vo * 3;
+  ButtonVector.push_back(HelpButton);  //2 - index
+  HelpButton.~Button(); 
 
   const char* credits = "images/credits.png";
-  Button creditsButton(credits, ho, vo, 100, 400);
-  creditsButton.srect.y = 0;
-  creditsButton.drect.x = ScWidth / 2 - creditsButton.drect.w / 2; 
-  creditsButton.drect.y = vo * 4;
-  ButtonVector.push_back(creditsButton);  //3 - index
+  Button CreditsButton(credits, ho, vo, 100, 400);
+  CreditsButton.srect.y = 0;
+  CreditsButton.drect.x = ScWidth / 2 - CreditsButton.drect.w / 2; 
+  CreditsButton.drect.y = vo * 4;
+  ButtonVector.push_back(CreditsButton);  //3 - index
+  CreditsButton.~Button(); 
 
   const char* exitB = "images/exit.png";
-  Button exitButton(exitB, ho, vo, 100, 400);
-  exitButton.srect.y = 0;
-  exitButton.drect.x = ScWidth / 2 - exitButton.drect.w / 2; 
-  exitButton.drect.y = vo * 5;
-  ButtonVector.push_back(exitButton);  //4 - index
+  Button ExitButton(exitB, ho, vo, 100, 400);
+  ExitButton.srect.y = 0;
+  ExitButton.drect.x = ScWidth / 2 - ExitButton.drect.w / 2; 
+  ExitButton.drect.y = vo * 5;
+  ButtonVector.push_back(ExitButton);  //4 - index
+  ExitButton.~Button(); 
 
   const char* oneB = "images/one.png";
-  Button oneButton(oneB, ho, vo, 100, 200);
-  oneButton.srect.y = 0;
-  oneButton.drect.x = ScWidth / 2 - oneButton.drect.w / 2; 
-  oneButton.drect.y = vo * 2;
-  ButtonVector.push_back(oneButton);  //5 - index
+  Button OneButton(oneB, ho, vo, 100, 200);
+  OneButton.srect.y = 0;
+  OneButton.drect.x = ScWidth / 2 - OneButton.drect.w / 2; 
+  OneButton.drect.y = vo * 2;
+  ButtonVector.push_back(OneButton);  //5 - index
+  OneButton.~Button(); 
 
   const char* twoB = "images/two.png";
-  Button twoButton(twoB, ho, vo, 100, 400);
-  twoButton.srect.y = 0;
-  twoButton.drect.x = ScWidth / 2 - twoButton.drect.w / 2; 
-  twoButton.drect.y = vo * 3;
-  ButtonVector.push_back(twoButton);  //6 - index
+  Button TwoButton(twoB, ho, vo, 100, 400);
+  TwoButton.srect.y = 0;
+  TwoButton.drect.x = ScWidth / 2 - TwoButton.drect.w / 2; 
+  TwoButton.drect.y = vo * 3;
+  ButtonVector.push_back(TwoButton);  //6 - index
+  TwoButton.~Button(); 
 
   const char* threeB = "images/three.png";
-  Button threeButton(threeB, ho, vo, 100, 400);
-  threeButton.srect.y = 0;
-  threeButton.drect.x = ScWidth / 2 - threeButton.drect.w / 2; 
-  threeButton.drect.y = vo * 4;
-  ButtonVector.push_back(threeButton);  //7 - index
+  Button ThreeButton(threeB, ho, vo, 100, 400);
+  ThreeButton.srect.y = 0;
+  ThreeButton.drect.x = ScWidth / 2 - ThreeButton.drect.w / 2; 
+  ThreeButton.drect.y = vo * 4;
+  ButtonVector.push_back(ThreeButton);  //7 - index
+  ThreeButton.~Button(); 
 
   const char* fourB = "images/four.png";
-  Button fourButton(fourB, ho, vo, 100, 400);
-  fourButton.srect.y = 0;
-  fourButton.drect.x = ScWidth / 2 - fourButton.drect.w / 2; 
-  fourButton.drect.y = vo * 5;
-  ButtonVector.push_back(fourButton);  //8 - index
+  Button FourButton(fourB, ho, vo, 100, 400);
+  FourButton.srect.y = 0;
+  FourButton.drect.x = ScWidth / 2 - FourButton.drect.w / 2; 
+  FourButton.drect.y = vo * 5;
+  ButtonVector.push_back(FourButton);  //8 - index
+  FourButton.~Button(); 
 
   const char* backB = "images/back.png";
-  Button backButton(backB, ho, vo, 100, 400);
-  backButton.srect.y = 0;
-  backButton.drect.x = ScWidth / 2 - backButton.drect.w / 2; 
-  backButton.drect.y = vo * 6;
-  ButtonVector.push_back(backButton);  //9 - index
+  Button BackButton(backB, ho, vo, 100, 400);
+  BackButton.srect.y = 0;
+  BackButton.drect.x = ScWidth / 2 - BackButton.drect.w / 2; 
+  BackButton.drect.y = vo * 6;
+  ButtonVector.push_back(BackButton);  //9 - index
+  BackButton.~Button(); 
 
-  Button back2Button(backB, ho, vo, 100, 400);
-  back2Button.srect.y = 0;
-  back2Button.drect.x = ScWidth / 2 - back2Button.drect.w / 2; 
-  back2Button.drect.y = vo * 6;
-  ButtonVector.push_back(back2Button);  //10 - index
+  Button Back2Button(backB, ho, vo, 100, 400);
+  Back2Button.srect.y = 0;
+  Back2Button.drect.x = ScWidth / 2 - Back2Button.drect.w / 2; 
+  Back2Button.drect.y = vo * 6;
+  ButtonVector.push_back(Back2Button);  //10 - index
+  Back2Button.~Button(); 
 
-  Button back3Button(backB, ho, vo, 100, 400);
-  back3Button.srect.y = 0;
-  back3Button.drect.x = ScWidth / 2 - back3Button.drect.w / 2; 
-  back3Button.drect.y = vo * 6;
-  ButtonVector.push_back(back3Button);  //11 - index
+  Button Back3Button(backB, ho, vo, 100, 400);
+  Back3Button.srect.y = 0;
+  Back3Button.drect.x = ScWidth / 2 - Back3Button.drect.w / 2; 
+  Back3Button.drect.y = vo * 7;
+  ButtonVector.push_back(Back3Button);  //11 - index
+  Back3Button.~Button(); 
 
   const char* continueB = "images/continue.png";
-  Button continueButton(continueB, ho, vo, 100, 400);
-  continueButton.srect.y = 0;
-  continueButton.drect.x = ScWidth / 2 - continueButton.drect.w / 2; 
-  continueButton.drect.y = vo * 5;
-  ButtonVector.push_back(continueButton);  //12 - index
+  Button ContinueButton(continueB, ho, vo, 100, 400);
+  ContinueButton.srect.y = 0;
+  ContinueButton.drect.x = ScWidth / 2 - ContinueButton.drect.w / 2; 
+  ContinueButton.drect.y = vo * 5;
+  ButtonVector.push_back(ContinueButton);  //12 - index
+  ContinueButton.~Button(); 
 
-  const char* dcw = "images/dcw.png";
-  Button dcwButton(dcw, ho * 4.5, vo, 100, 900);
-  dcwButton.srect.y = 0;
-  dcwButton.drect.x = ScWidth / 2 - dcwButton.drect.w / 2; 
-  dcwButton.drect.y = vo * 3;
-  ButtonVector.push_back(dcwButton);  //13 - index
+  const char* dcw = "images/classic.png";
+  Button ClassicButton(dcw, ho, vo, 100, 400);
+  ClassicButton.srect.y = 0;
+  ClassicButton.drect.x = ScWidth / 2 - ClassicButton.drect.w / 2; 
+  ClassicButton.drect.y = vo * 2;
+  ButtonVector.push_back(ClassicButton);  //13 - index
+  ClassicButton.~Button(); 
 
-  const char* tvB = "images/tv.png";
-  Button tvButton(tvB, ho * 3.5, vo, 100, 700);
-  tvButton.srect.y = 0;
-  tvButton.drect.x = ScWidth / 2 - tvButton.drect.w / 2; 
-  tvButton.drect.y = vo * 4; 
-  ButtonVector.push_back(tvButton);  //14 - index  
+  const char* terB = "images/territory.png";
+  Button TerritoryButton(terB, ho, vo, 100, 400);
+  TerritoryButton.srect.y = 0;
+  TerritoryButton.drect.x = ScWidth / 2 - TerritoryButton.drect.w / 2; 
+  TerritoryButton.drect.y = vo * 3; 
+  ButtonVector.push_back(TerritoryButton);  //14 - index
+  TerritoryButton.~Button();  
 
-  const char* paB = "images/pa.png";
-  Label paLabel(paB, ho * 1.5, vo, 100, 600);
-  paLabel.srect.y = 0;
-  paLabel.drect.x = ScWidth / 2 - paLabel.drect.w / 2; 
-  paLabel.drect.y = vo;
-  LabelVector.push_back(paLabel); //0 - index
+  const char* paL = "images/pa.png";
+  Label PaLabel(paL, ho * 1.5, vo, 100, 600);
+  PaLabel.srect.y = 0;
+  PaLabel.drect.x = ScWidth / 2 - PaLabel.drect.w / 2; 
+  PaLabel.drect.y = vo;
+  LabelVector.push_back(PaLabel); //0 - index
+  PaLabel.~Label();
 
-  const char* gvaiL = "images/GVAI.png";
-  Label gvaiLabel(gvaiL, ho * 1.5, vo, 100, 600);
-  gvaiLabel.srect.y = 0;
-  gvaiLabel.drect.x = ScWidth / 2 - gvaiLabel.drect.w / 2; 
-  gvaiLabel.drect.y = vo;
-  LabelVector.push_back(gvaiLabel); //1 - index
+  const char* GvsAIL = "images/gvai.png";
+  Label GvsAILabel(GvsAIL, ho * 1.5, vo, 100, 600);
+  GvsAILabel.srect.y = 0;
+  GvsAILabel.drect.x = ScWidth / 2 - GvsAILabel.drect.w / 2; 
+  GvsAILabel.drect.y = vo;
+  LabelVector.push_back(GvsAILabel); //1 - index
+  GvsAILabel.~Label();
 
   const char* udL = "images/ud.png";
-  Label udLabel(udL, ho * 1.5, vo, 100, 600);
-  udLabel.srect.y = 0;
-  udLabel.drect.x = ScWidth / 2 - udLabel.drect.w / 2; 
-  udLabel.drect.y = vo * 2;
-  LabelVector.push_back(udLabel); //2 - index
+  Label Udlabel(udL, ho * 1.5, vo, 100, 600);
+  Udlabel.srect.y = 0;
+  Udlabel.drect.x = ScWidth / 2 - Udlabel.drect.w / 2; 
+  Udlabel.drect.y = vo * 2;
+  LabelVector.push_back(Udlabel); //2 - index
+  Udlabel.~Label();
 
   const char* sgL = "images/sg.png";
-  Label sgLabel(sgL, ho * 1.5, vo, 100, 600);
-  sgLabel.srect.y = 0;
-  sgLabel.drect.x = ScWidth / 2 - sgLabel.drect.w / 2; 
-  sgLabel.drect.y = vo;
-  LabelVector.push_back(sgLabel); //3 - index
+  Label SgLabel(sgL, ho * 1.5, vo, 100, 600);
+  SgLabel.srect.y = 0;
+  SgLabel.drect.x = ScWidth / 2 - SgLabel.drect.w / 2; 
+  SgLabel.drect.y = vo;
+  LabelVector.push_back(SgLabel); //3 - index
+  SgLabel.~Label();
 
   const char* colorsL = "images/colors.png";
-  Label colorsLabel(colorsL, ho * 1.5, vo, 100, 600);
-  colorsLabel.srect.y = 0;
-  colorsLabel.drect.x = ScWidth / 2 - colorsLabel.drect.w / 2; 
-  colorsLabel.drect.y = vo * 2;
-  LabelVector.push_back(colorsLabel); //4 - index
+  Label ColorsLabel(colorsL, ho * 1.5, vo, 100, 600);
+  ColorsLabel.srect.y = 0;
+  ColorsLabel.drect.x = ScWidth / 2 - ColorsLabel.drect.w / 2; 
+  ColorsLabel.drect.y = vo * 2;
+  LabelVector.push_back(ColorsLabel); //4 - index
+  ColorsLabel.~Label();
 
   const char* rgbL = "images/rgb.png";
-  Label rgbLabel(rgbL, ho * 1.5, vo, 100, 600);
-  rgbLabel.srect.y = 0;
-  rgbLabel.drect.x = ScWidth / 2 - rgbLabel.drect.w / 2; 
-  rgbLabel.drect.y = vo * 3;
-  LabelVector.push_back(rgbLabel); //5 - index
+  Label RgbLabel(rgbL, ho * 1.5, vo, 100, 600);
+  RgbLabel.srect.y = 0;
+  RgbLabel.drect.x = ScWidth / 2 - RgbLabel.drect.w / 2; 
+  RgbLabel.drect.y = vo * 3;
+  LabelVector.push_back(RgbLabel); //5 - index
+  RgbLabel.~Label();
 
   const char* sgsL = "images/sgs.png";
-  Label sgsLabel(sgsL, ho * 1.5, vo, 100, 600);
-  sgsLabel.srect.y = 0;
-  sgsLabel.drect.x = ScWidth / 2 - sgsLabel.drect.w / 2; 
-  sgsLabel.drect.y = vo; 
-  LabelVector.push_back(sgsLabel); //6 - index
+  Label SgsLabel(sgsL, ho * 1.5, vo, 100, 600);
+  SgsLabel.srect.y = 0;
+  SgsLabel.drect.x = ScWidth / 2 - SgsLabel.drect.w / 2; 
+  SgsLabel.drect.y = 0; 
+  LabelVector.push_back(SgsLabel); //6 - index
+  SgsLabel.~Label();
 
   const char* useL = "images/use.png";
-  Label useLabel(useL, ho * 1.5, vo, 100, 600);
-  useLabel.srect.y = 0;
-  useLabel.drect.x = ScWidth / 2 - useLabel.drect.w / 2; 
-  useLabel.drect.y = vo * 2;
-  LabelVector.push_back(useLabel); //7 - index
+  Label UseLabel(useL, ho * 1.5, vo, 100, 600);
+  UseLabel.srect.y = 0;
+  UseLabel.drect.x = ScWidth / 2 - UseLabel.drect.w / 2; 
+  UseLabel.drect.y = vo;
+  LabelVector.push_back(UseLabel); //7 - index
+  UseLabel.~Label();
 
   const char* sgrL = "images/sgr.png";
-  Label sgrLabel(sgrL, ho * 1.5, vo, 100, 600);
-  sgrLabel.srect.y = 0;
-  sgrLabel.drect.x = ScWidth / 2 - sgrLabel.drect.w / 2; 
-  sgrLabel.drect.y = vo;
-  LabelVector.push_back(sgrLabel); //8 - index
+  Label SgrLabel(sgrL, ho * 1.5, vo, 100, 600);
+  SgrLabel.srect.y = 0;
+  SgrLabel.drect.x = ScWidth / 2 - SgrLabel.drect.w / 2; 
+  SgrLabel.drect.y = 0;
+  LabelVector.push_back(SgrLabel); //8 - index
+  SgrLabel.~Label();
 
+  const char* mdaL = "images/mda.png";
+  Label MaxdotamountLabel(mdaL, ho * 1.5, vo, 100, 800);
+  MaxdotamountLabel.srect.y = 0;
+  MaxdotamountLabel.drect.x = ScWidth * 4 / 9 - MaxdotamountLabel.drect.w / 2; 
+  MaxdotamountLabel.drect.y = vo * 4;
+  LabelVector.push_back(MaxdotamountLabel); //9 - index
+  MaxdotamountLabel.~Label();
+
+  const char* medL = "images/med.png";
+  Label MaxeatendotsLabel(medL, ho * 1.5, vo, 100, 800);
+  MaxeatendotsLabel.srect.y = 0;
+  MaxeatendotsLabel.drect.x = ScWidth * 4 / 9 - MaxeatendotsLabel.drect.w / 2; 
+  MaxeatendotsLabel.drect.y = vo * 5;
+  LabelVector.push_back(MaxeatendotsLabel); //10 - index
+  MaxeatendotsLabel.~Label();
+
+  ColorButton P21(25, 170, 100);
   P21.rect.x = ScWidth / 3 - P21.rect.w / 2; 
   P21.rect.y = vo * 4;
+  ClrButtonVector.push_back(P21); //0 - index
+  P21.~ColorButton();
 
+  ColorButton P22(100, 0, 150);
   P22.rect.x = ScWidth * 2 / 3 - P22.rect.w / 2; 
   P22.rect.y = vo * 4;
+  ClrButtonVector.push_back(P22); //1 - index
+  P22.~ColorButton();
 
-  P31.rect.x = ScWidth / 4 - P21.rect.w / 2; 
+  ColorButton P31(255, 0, 0);
+  P31.rect.x = ScWidth / 4 - P31.rect.w / 2; 
   P31.rect.y = vo * 4;
-
-  P32.rect.x = ScWidth * 2 / 4 - P22.rect.w / 2; 
+  ClrButtonVector.push_back(P31); //2 - index
+  P31.~ColorButton();
+  
+  ColorButton P32(0, 255, 0);
+  P32.rect.x = ScWidth * 2 / 4 - P32.rect.w / 2; 
   P32.rect.y = vo * 4;
+  ClrButtonVector.push_back(P32); //3 - index
+  P32.~ColorButton();
 
-  P33.rect.x = ScWidth * 3 / 4 - P22.rect.w / 2; 
+  ColorButton P33(0, 0, 255);
+  P33.rect.x = ScWidth * 3 / 4 - P33.rect.w / 2; 
   P33.rect.y = vo * 4;
+  ClrButtonVector.push_back(P33); //4 - index
+  P33.~ColorButton();
 
-  P41.rect.x = ScWidth * 1 / 5 - P22.rect.w / 2; 
+  ColorButton P41(0, 255, 10);
+  P41.rect.x = ScWidth * 1 / 5 - P41.rect.w / 2; 
   P41.rect.y = vo * 4;
+  ClrButtonVector.push_back(P41); //5 - index
+  P41.~ColorButton();
 
-  P42.rect.x = ScWidth * 2 / 5 - P21.rect.w / 2; 
+  ColorButton P42(255, 10, 0);
+  P42.rect.x = ScWidth * 2 / 5 - P42.rect.w / 2; 
   P42.rect.y = vo * 4;
+  ClrButtonVector.push_back(P42); //6 - index
+  P42.~ColorButton();
 
-  P43.rect.x = ScWidth * 3 / 5 - P22.rect.w / 2; 
+  ColorButton P43(0, 10, 255);
+  P43.rect.x = ScWidth * 3 / 5 - P43.rect.w / 2; 
   P43.rect.y = vo * 4;
+  ClrButtonVector.push_back(P43); //7 - index
+  P43.~ColorButton();
 
-  P44.rect.x = ScWidth * 4 / 5 - P22.rect.w / 2; 
+  ColorButton P44(240, 240, 0);
+  P44.rect.x = ScWidth * 4 / 5 - P44.rect.w / 2; 
   P44.rect.y = vo * 4;
-////////////////////////////////////////////////////////////////////////////////
+  ClrButtonVector.push_back(P44); //8 - index
+  P44.~ColorButton();
+
+/////////////////////////////////Main cycle/////////////////////////////////////
   GameState = Menu;
 
   while(1)
@@ -2185,9 +2303,6 @@ int main(int argc, char *argv[])
     }
   }
 //////////////////////////Exiting program///////////////////////////////////////
-  SDL_DestroyTexture(textureText);
-  SDL_DestroyTexture(textureText2);
-  SDL_DestroyTexture(textureText3);
   TTF_CloseFont(my_Font);
   TTF_Quit();
   SDL_DestroyRenderer(renderer);
