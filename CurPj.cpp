@@ -1,10 +1,9 @@
 #include <iostream>
 #include <err.h>
 #include <string>
+#include <queue>
+#include <unordered_set>
 #include <stack>
-#include <iterator>
-#include <set>
-#include <vector>
 #include <SDL2/SDL.h>
 
 #include <SDL2/SDL_image.h>
@@ -27,8 +26,9 @@ class Dots
 public:
   bool exist;
   SDL_Color clr;
-  uint8_t visited;
+  bool visited;
   bool deadend;
+  bool cycle;
 };
 
 //global constants
@@ -80,36 +80,17 @@ uint8_t pa_back = 1;
 SDL_Color white = {255, 255, 255, 255};
 SDL_Color cur_color;
 
-enum GameStateType {Menu, Credits, SAP, ONEPM, TWOPM, THREEPM, FOURPM, GSM, GRM, Game};
+enum GameStateType {Menu, Credits, SAP, ONEPM, TWOPM,
+                    THREEPM, FOURPM, GSM, GRM, Game};
 GameStateType GameState;
 
-void Print_stack(stack <int> st)
-{
-  cout << " Stack size = " << st.size() << endl;
-  cout << " Stack ftom top to bottom:" << endl;
-  while (!st.empty())
-  {
-    cout << st.top() << endl;
-    st.pop();
-  }
-  cout << endl;
-}
 
-void Print_mset(multiset <int> st)
-{
-  cout << " Mset size = " << st.size() << endl;
-  cout << " The values are" << endl;
-  for (auto c: st)
-    cout << c << endl;
-
-  cout << endl;
-}
-
-int Different_ways( Dots* dots, int current, int fx , int fy)
+int DifferentWays( Dots* dots, int current, int fx , int fy)
 {
   int retval = 0;
 
-  if (((current + 1) % fx != 0) && (dots[current + 1].exist == true)
+  if (((current + 1) % fx != 0)
+    && (dots[current + 1].exist == true)
     && (dots[current + 1].deadend != true))
     retval++;
 
@@ -148,35 +129,11 @@ int Different_ways( Dots* dots, int current, int fx , int fy)
   return retval;
 }
 
-bool dfs (Dots* dots, int current, stack<int>& st,
-          multiset<int>& set, int fx , int fy)
+void FindConnectedDots
+  (Dots* dots, int current, unordered_set <int> &uset, int fx, int fy)
 {
-  bool ret_needed = false;
-  for (auto c: set)
-  {
-    if (set.count(c) >= 2)
-      ret_needed = true;
-  }
-  
-  if (ret_needed) 
-    return true;
-
-  if (Different_ways(dots, current, fx , fy) <= 1)
-  {  
-    dots[current].deadend = true;
-    while (!st.empty() && (Different_ways(dots, st.top(), fx , fy) <= 1))
-    { 
-      dots[st.top()].deadend = true;
-      st.pop();
-    }
-  }
-  else
-  {  
-    set.insert(current);
-    st.push(current);
-  }
-
-  dots[current].visited++;
+  dots[current].visited = true;
+  uset.insert(current);
   
   //up-right direction
   if ( (( current + 1) % fx != 0) && ( current - fx >= 0 )
@@ -184,7 +141,7 @@ bool dfs (Dots* dots, int current, stack<int>& st,
      && (dots[current + 1 - fx].deadend == false))
   {
     if (dots[current + 1 - fx].visited == false)
-      dfs(dots, current + 1 - fx, st, set, fx, fy);
+      FindConnectedDots(dots, current + 1 - fx, uset, fx, fy);
   }
 
   // right direction
@@ -192,7 +149,7 @@ bool dfs (Dots* dots, int current, stack<int>& st,
     && (dots[current + 1].deadend == false))
   {                  
     if (dots[current + 1].visited == false)
-      dfs(dots, current + 1, st, set, fx, fy);
+      FindConnectedDots(dots, current + 1, uset, fx, fy);
   }
 
   //down-right direction  
@@ -201,7 +158,7 @@ bool dfs (Dots* dots, int current, stack<int>& st,
      && (dots[current + 1 + fx].deadend == false))   
   {
     if (dots[current + 1 + fx].visited == false)
-      dfs(dots, current + 1 + fx, st, set, fx, fy);  
+      FindConnectedDots(dots, current + 1 + fx, uset, fx, fy);  
   }
 
   // down direction
@@ -209,7 +166,7 @@ bool dfs (Dots* dots, int current, stack<int>& st,
     && (dots[current + fx].deadend == false))
   { 
     if (dots[current + fx].visited == false)
-      dfs(dots, current + fx, st, set, fx, fy);
+      FindConnectedDots(dots, current + fx, uset, fx, fy);
   }
 
   //down-left direction
@@ -218,7 +175,7 @@ bool dfs (Dots* dots, int current, stack<int>& st,
      && (dots[current - 1 + fx].deadend == false))
   { 
     if (dots[current - 1 + fx].visited == false)
-      dfs(dots, current - 1 + fx, st, set, fx, fy); 
+      FindConnectedDots(dots, current - 1 + fx, uset, fx, fy); 
   }
 
   // left direction
@@ -226,7 +183,7 @@ bool dfs (Dots* dots, int current, stack<int>& st,
     && (dots[current - 1].deadend == false))
   {  
     if (dots[current - 1].visited == false)
-      dfs(dots, current - 1, st, set, fx, fy);  
+      FindConnectedDots(dots, current - 1, uset, fx, fy);  
   }
 
   //up-left direction 
@@ -235,7 +192,7 @@ bool dfs (Dots* dots, int current, stack<int>& st,
      && (dots[current - 1 - fx].deadend == false))
   {
     if (dots[current - 1 - fx].visited == false)
-      dfs(dots, current - 1 - fx, st, set, fx, fy); 
+      FindConnectedDots(dots, current - 1 - fx, uset, fx, fy); 
   }
 
   // up diterction
@@ -243,195 +200,48 @@ bool dfs (Dots* dots, int current, stack<int>& st,
     && (dots[current - fx].deadend == false))                                        
   { 
     if (dots[current - fx].visited == false)
-      dfs(dots, current - fx, st, set, fx, fy);
+      FindConnectedDots(dots, current - fx, uset, fx, fy);
   }
-
-  //up-right direction
-  if ( (( current + 1) % fx != 0) && ( current - fx >= 0 )
-     && (dots[current + 1 - fx].exist == true)
-     && (dots[current + 1 - fx].deadend == false))
-  {
-    if (dots[current + 1 - fx].visited == true)
-     set.insert(current + 1 - fx);
-  }
-
-  // right direction
-  if (((current + 1) % fx != 0) && (dots[current + 1].exist == true)
-    && (dots[current + 1].deadend == false))
-  {                  
-    if (dots[current + 1].visited == false)
-     set.insert(current + 1);
-  }
-
-  //down-right direction  
-  if ( (( current + 1) % fx != 0) && ( current + fx < fx * fy )
-     && (dots[current + 1 + fx].exist == true)
-     && (dots[current + 1 + fx].deadend == false))   
-  {
-    if (dots[current + 1 + fx].visited == true)
-     set.insert(current + 1 + fx);   
-  }
-
-  // down direction
-  if (( current + fx < fx * fy ) && (dots[current + fx].exist == true)
-    && (dots[current + fx].deadend == false))
-  { 
-    if (dots[current + fx].visited == true)
-     set.insert(current + fx); 
-  }
-
-  //down-left direction
-  if (( current % fx != 0) && ( current + fx < fx * fy )
-     && (dots[current - 1 + fx].exist == true)
-     && (dots[current - 1 + fx].deadend == false))
-  { 
-    if (dots[current - 1 + fx].visited == true)
-     set.insert(current - 1 + fx); 
-  }
-
-  // left direction
-  if ( ( current % fx != 0) && (dots[current - 1].exist == true)
-    && (dots[current - 1].deadend == false))
-  {  
-    if (dots[current - 1].visited == true)
-     set.insert(current - 1);  
-  }
-
-  //up-left direction 
-  if ( ( current % fx != 0) && ( current - fx >= 0)
-     && (dots[current - 1 - fx].exist == true)
-     && (dots[current - 1 - fx].deadend == false))
-  {
-    if (dots[current - 1 - fx].visited == true)
-     set.insert(current - 1 - fx);  
-  }
-
-  // up diterction
-  if (( current - fx >= 0) && (dots[current - fx].exist == true)
-    && (dots[current - fx].deadend == false))                                        
-  { 
-    if (dots[current - fx].visited == true)
-     set.insert(current - fx); 
-  }    
-
-  return false;
 }
 
-void GetCycle (vector <int>& v, Dots* dots, int current, int fx, int fy)
+void DeleteBranches
+ (Dots* dots, int current, unordered_set <int> &uset, int fx, int fy)
 {
-  cout << "Entered" << endl;
-  dots[current].visited++;
-  v.push_back(current);
-  
-  if (  dots[current].visited > 2)
-    return;
-  
-  //up-right direction
-  if ( (( current + 1) % fx != 0) && ( current - fx >= 0 )
-     && (dots[current + 1 - fx].exist == true)
-     && (dots[current + 1 - fx].deadend == false)
-     && (dots[current + 1 - fx].visited == 1))
+  bool branchdeleted = true;
+
+  while ((uset.size() > 0) && (branchdeleted == true))
   {
-    //v.push_back(current + 1 - fx);
-    GetCycle(v, dots, current + 1 - fx, fx, fy);
+    branchdeleted = false;
+    for (auto i = uset.begin(); i != uset.end(); )
+    {
+      if (DifferentWays(dots, *i, fx , fy) <= 1)
+      { 
+        branchdeleted = true;
+        dots[*i].deadend = true; 
+        i = uset.erase(i);
+      }
+      else
+        i++;
+    }
   }
-
-  // right direction
-  if (((current + 1) % fx != 0) && (dots[current + 1].exist == true)
-    && (dots[current + 1].deadend == false)
-    && (dots[current + 1].visited == 1))
-  {      
-    //v.push_back(current + 1);            
-    GetCycle(v, dots, current + 1, fx, fy);
-  }
-
-  //down-right direction  
-  if ( (( current + 1) % fx != 0) && ( current + fx < fx * fy )
-     && (dots[current + 1 + fx].exist == true)
-     && (dots[current + 1 + fx].deadend == false)
-     && (dots[current + 1 + fx].visited == 1))   
-  {
-    //v.push_back(current + 1 + fx);
-    GetCycle(v, dots, current + 1 + fx, fx, fy);  
-  }
-
-  // down direction
-  if (( current + fx < fx * fy ) && (dots[current + fx].exist == true)
-    && (dots[current + fx].deadend == false)
-    && (dots[current + fx].visited == 1))
-  { 
-    //v.push_back(current + fx);
-    GetCycle(v, dots, current + fx, fx, fy);
-  }
-
-  //down-left direction
-  if (( current % fx != 0) && ( current + fx < fx * fy )
-     && (dots[current - 1 + fx].exist == true)
-     && (dots[current - 1 + fx].deadend == false)
-     && (dots[current - 1 + fx].visited == 1))
-  { 
-    //v.push_back(current - 1 + fx);
-    GetCycle(v, dots, current - 1 + fx, fx, fy); 
-  }
-
-  // left direction
-  if ( ( current % fx != 0) && (dots[current - 1].exist == true)
-    && (dots[current - 1].deadend == false)
-    && (dots[current - 1].visited == 1))
-  { 
-    //v.push_back(current - 1); 
-    GetCycle(v, dots, current - 1, fx, fy);  
-  }
-
-  //up-left direction 
-  if ( ( current % fx != 0) && ( current - fx >= 0)
-     && (dots[current - 1 - fx].exist == true)
-     && (dots[current - 1 - fx].deadend == false)
-     && (dots[current - 1 - fx].visited == 1))
-  {
-    //v.push_back(current - 1 - fx);
-    GetCycle(v, dots, current - 1 - fx, fx, fy); 
-  }
-
-  // up diterction
-  if (( current - fx >= 0) && (dots[current - fx].exist == true)
-    && (dots[current - fx].deadend == false)
-    &&(dots[current - fx].visited == 1))                                        
-  {   
-    //v.push_back(current - fx);
-    GetCycle(v, dots, current - fx, fx, fy);
-  }
-
 }
 
 void FindContour (Dots* dots, int fx, int fy)
 {
-  int nnvisited = 0;
-  while ((nnvisited < fx * fy) && (dots[nnvisited].exist == false))
-    nnvisited++;
+  int current = 0;
+
+  while ((current < fx * fy) && (dots[current].exist == false))
+    current++;
   
-  if (nnvisited == fx * fy)
+  if (current == fx * fy)
     return;
-
-  stack <int> st;
-  multiset <int> set;
-  int current = nnvisited;
-
-
-  dfs(dots, current, st, set, fx, fy);
-  vector <int> cycle;
   
-  if (!st.empty())
-    GetCycle (cycle, dots, st.top(), fx, fy);
+  unordered_set <int> uset;
+  FindConnectedDots(dots, current, uset, fx, fy);
+  cout << "Connections found, uset size = " << uset.size() << endl;
+  DeleteBranches(dots, current, uset, fx, fy);
+  cout << "Branches deleted, uset size = "  << uset.size()  << endl; 
 
-  cout << "Cycle size= " << cycle.size() << endl;
-
-  for (int i = 0; i < cycle.size(); i++)
-    cout << cycle[i] << endl;
-  cout << "Cycle ends" << endl;
-
-  Print_stack(st);
-  Print_mset(set);
 }
 
 void MoveBoard(int fx, int fy)
@@ -904,9 +714,10 @@ void MainMenu()
     DrawDots(dots, dots_menu_size, field_x_size);
     EnumerateField(field_y_base, field_x_base, my_Font);
     Zoom();
+  
     for (int i = 0; i < dots_menu_size; i++)
     {
-      dots[i].visited = 0;
+      dots[i].visited = false;
       dots[i].deadend = false;
     }
     FindContour(dots, field_x_base, field_y_base);
@@ -2310,4 +2121,3 @@ int main(int argc, char *argv[])
   SDL_Quit();
   return 666;
 }
-
