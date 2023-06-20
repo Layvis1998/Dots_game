@@ -11,6 +11,8 @@
 #include "headers/Button.h"
 #include "headers/Label.h"
 #include "headers/ColorButton.h"
+#include <climits>
+
 #if __linux__
   #include <X11/Xlib.h>
 #endif
@@ -83,51 +85,6 @@ SDL_Color cur_color;
 enum GameStateType {Menu, Credits, SAP, ONEPM, TWOPM,
                     THREEPM, FOURPM, GSM, GRM, Game};
 GameStateType GameState;
-
-
-int DifferentWays( Dots* dots, int current, int fx , int fy)
-{
-  int retval = 0;
-
-  if (((current + 1) % fx != 0)
-    && (dots[current + 1].exist == true)
-    && (dots[current + 1].deadend != true))
-    retval++;
-
-  if ( (( current + 1) % fx != 0) && ( current + fx < fx * fy )
-     && (dots[current + 1 + fx].exist == true)
-     && (dots[current + 1 + fx].deadend != true))
-    retval++;
-
-  if (( current + fx < fx * fy ) && (dots[current + fx].exist == true)
-    && (dots[current + fx].deadend != true))
-    retval++;
-
-  if (( current % fx != 0) && ( current + fx < fx * fy )
-    && (dots[current - 1 + fx].exist == true)
-    && (dots[current - 1 + fx].deadend != true))
-    retval++;
-
-  if ( ( current % fx != 0) && (dots[current - 1].exist == true)
-    && (dots[current - 1].deadend != true))
-    retval++;
-
-  if ( ( current % fx != 0) && ( current - fx >= 0)
-    && (dots[current - 1 - fx].exist == true)
-    && (dots[current - 1 - fx].deadend != true))
-    retval++;
-
-  if (( current - fx >= 0) && (dots[current - fx].exist == true)
-    && (dots[current - fx].deadend != true))  
-    retval++;
-
-  if ( (( current + 1) % fx != 0) && ( current - fx >= 0 )
-     && (dots[current + 1 - fx].exist == true)
-     && (dots[current + 1 - fx].deadend != true))
-    retval++;
-
-  return retval;
-}
 
 void FindConnectedDots
   (Dots* dots, int current, unordered_set <int> &uset, int fx, int fy)
@@ -204,6 +161,50 @@ void FindConnectedDots
   }
 }
 
+int DifferentWays( Dots* dots, int current, int fx , int fy)
+{
+  int retval = 0;
+
+  if (((current + 1) % fx != 0)
+    && (dots[current + 1].exist == true)
+    && (dots[current + 1].deadend != true))
+    retval++;
+
+  if ( (( current + 1) % fx != 0) && ( current + fx < fx * fy )
+     && (dots[current + 1 + fx].exist == true)
+     && (dots[current + 1 + fx].deadend != true))
+    retval++;
+
+  if (( current + fx < fx * fy ) && (dots[current + fx].exist == true)
+    && (dots[current + fx].deadend != true))
+    retval++;
+
+  if (( current % fx != 0) && ( current + fx < fx * fy )
+    && (dots[current - 1 + fx].exist == true)
+    && (dots[current - 1 + fx].deadend != true))
+    retval++;
+
+  if ( ( current % fx != 0) && (dots[current - 1].exist == true)
+    && (dots[current - 1].deadend != true))
+    retval++;
+
+  if ( ( current % fx != 0) && ( current - fx >= 0)
+    && (dots[current - 1 - fx].exist == true)
+    && (dots[current - 1 - fx].deadend != true))
+    retval++;
+
+  if (( current - fx >= 0) && (dots[current - fx].exist == true)
+    && (dots[current - fx].deadend != true))  
+    retval++;
+
+  if ( (( current + 1) % fx != 0) && ( current - fx >= 0 )
+     && (dots[current + 1 - fx].exist == true)
+     && (dots[current + 1 - fx].deadend != true))
+    retval++;
+
+  return retval;
+}
+
 void DeleteBranches
  (Dots* dots, int current, unordered_set <int> &uset, int fx, int fy)
 {
@@ -226,21 +227,193 @@ void DeleteBranches
   }
 }
 
+void ExtractCycle
+  (Dots* dots, int current, unordered_set <int> &uset, int fx, int fy)
+{
+  dots[current].cycle = true;
+  uset.insert(current);
+
+  //up-right direction
+  if ( (( current + 1) % fx != 0) && ( current - fx >= 0 )
+     && (dots[current + 1 - fx].exist == true)
+     && (dots[current + 1 - fx].deadend == false)
+     && (dots[current + 1 - fx].cycle == false))
+  {
+    ExtractCycle(dots, current + 1 - fx, uset, fx, fy);
+  }
+  // right direction
+  else if (((current + 1) % fx != 0)
+    && (dots[current + 1].exist == true)
+    && (dots[current + 1].deadend == false)
+    && (dots[current + 1].cycle == false))
+  {                  
+    ExtractCycle(dots, current + 1, uset, fx, fy);
+  }
+  //down-right direction  
+  else if ( (( current + 1) % fx != 0) && ( current + fx < fx * fy )
+     && (dots[current + 1 + fx].exist == true)
+     && (dots[current + 1 + fx].deadend == false)
+     && (dots[current + 1 + fx].cycle == false))   
+  {
+    ExtractCycle(dots, current + 1 + fx, uset, fx, fy);  
+  }
+  // down direction
+  else if (( current + fx < fx * fy ) && (dots[current + fx].exist == true)
+    && (dots[current + fx].deadend == false)
+    && (dots[current + fx].cycle == false))
+  { 
+    ExtractCycle(dots, current + fx, uset, fx, fy);
+  }
+  //down-left direction
+  else if (( current % fx != 0) && ( current + fx < fx * fy )
+     && (dots[current - 1 + fx].exist == true)
+     && (dots[current - 1 + fx].deadend == false)
+     && (dots[current - 1 + fx].cycle == false))
+  { 
+    ExtractCycle(dots, current - 1 + fx, uset, fx, fy); 
+  }
+  // left direction
+  else if ( ( current % fx != 0) && (dots[current - 1].exist == true)
+    && (dots[current - 1].deadend == false)
+    && (dots[current - 1].cycle == false))
+  {  
+    ExtractCycle(dots, current - 1, uset, fx, fy);  
+  }
+  //up-left direction 
+  else if ( ( current % fx != 0) && ( current - fx >= 0)
+     && (dots[current - 1 - fx].exist == true)
+     && (dots[current - 1 - fx].deadend == false)
+     && (dots[current - 1 - fx].cycle == false))
+  {
+    ExtractCycle(dots, current - 1 - fx, uset, fx, fy); 
+  }
+  // up diterction
+  else if (( current - fx >= 0) && (dots[current - fx].exist == true)
+    && (dots[current - fx].deadend == false)
+    && (dots[current - fx].cycle == false))                                        
+  { 
+    ExtractCycle(dots, current - fx, uset, fx, fy);
+  }
+}
+
+int DifferentWaysE( Dots* dots, unordered_set <int> uset, int current, int fx , int fy)
+{
+  int retval = 0;
+
+  if (uset.count(current + 1))
+    retval++;
+
+  if (uset.count(current + 1 + fx) )
+    retval++;
+
+  if (uset.count(current + fx))
+    retval++;
+
+  if (uset.count(current - 1 + fx))
+    retval++;
+
+  if ( uset.count(current - 1))
+    retval++;
+
+  if ( uset.count(current - 1 - fx) )
+    retval++;
+
+  if ( uset.count(current -  fx))  
+    retval++;
+
+  if ( uset.count(current + 1 - fx))
+    retval++;
+
+  return retval;
+}
+
+void DeleteBranchesE
+ (Dots* dots, int current, unordered_set <int> &uset, int fx, int fy)
+{
+  bool branchdeleted = true;
+
+  while ((uset.size() > 0) && (branchdeleted == true))
+  {
+    branchdeleted = false;
+    for (auto i = uset.begin(); i != uset.end(); )
+    {
+      if (DifferentWaysE(dots, uset, *i, fx , fy) <= 1)
+      { 
+        branchdeleted = true; 
+        i = uset.erase(i);
+      }
+      else
+        i++;
+    }
+  }
+}
+
+int Min (unordered_set <int> uset)
+{
+  int min = INT_MAX;
+  for (auto i = uset.begin(); i != uset.end(); i++ )
+  {
+    if (min > *i)
+      min = *i;
+  }
+  return min;
+}
+
+void GetReadyForCycleExtraction(Dots* dots, unordered_set <int> uset)
+{
+
+}
+
+unordered_set<int> &operator-=(unordered_set<int> &a, unordered_set<int> &b)
+{
+  for (auto i = b.begin(); i != b.end(); i++ )
+  {
+    if (a.count(*i) )
+      a.erase(*i);
+  }
+  
+  return a;
+}
+
 void FindContour (Dots* dots, int fx, int fy)
 {
   int current = 0;
+  for (int i = 0; i < fx * fy; i++)
+  {
+    dots[i].visited = false;
+    dots[i].deadend = false;
+    dots[i].cycle = false;
+  }
 
-  while ((current < fx * fy) && (dots[current].exist == false))
-    current++;
+  while (1)
+  {
+    while ((current < fx * fy) &&
+      (dots[current].exist == false) || (dots[current].visited == true))
+      current++;
+    
+    if (current == fx * fy)
+      return;
   
-  if (current == fx * fy)
-    return;
-  
-  unordered_set <int> uset;
-  FindConnectedDots(dots, current, uset, fx, fy);
-  cout << "Connections found, uset size = " << uset.size() << endl;
-  DeleteBranches(dots, current, uset, fx, fy);
-  cout << "Branches deleted, uset size = "  << uset.size()  << endl; 
+    unordered_set <int> ConnectedCycles;
+    FindConnectedDots(dots, current, ConnectedCycles, fx, fy);
+    DeleteBranches(dots, current, ConnectedCycles, fx, fy);
+    //cout << "Connected cycles size = "  << ConnectedCycles.size()  << endl;
+
+    while ((ConnectedCycles.size() != 0))
+    { 
+      for (auto i = ConnectedCycles.begin(); i != ConnectedCycles.end(); i++ )
+        dots[*i].cycle = false;
+
+      unordered_set <int> Cycle;
+      int start = Min(ConnectedCycles);
+      ExtractCycle(dots, start, Cycle, fx, fy);
+      DeleteBranchesE(dots, start, Cycle, fx, fy);
+      cout << "Extracted cycle size = "  << Cycle.size()  << endl;
+      ConnectedCycles -= Cycle;
+      DeleteBranchesE(dots, start, ConnectedCycles, fx, fy);
+      //cout << " New Connected cycles size = "  << ConnectedCycles.size()  << endl;
+    }
+  }
 
 }
 
@@ -590,7 +763,7 @@ void Zoom()
   }
 }
 
-int GetDotInput(Dots *dots, SDL_Color clr, int fxs, int fys)
+bool GetDotInput(Dots *dots, SDL_Color clr, int fxs, int fys)
 {
   if ( (event.button.button == SDL_BUTTON_LEFT) &&
      (event.type == SDL_MOUSEBUTTONUP) &&
@@ -602,18 +775,18 @@ int GetDotInput(Dots *dots, SDL_Color clr, int fxs, int fys)
      && (xMouse >= 5.0 / 3 * intrv) && (yMouse >= 5.0 / 3 * intrv)
      && (xMouse + x_c <= (fxs + 5.0 / 3) * intrv)
      && (yMouse + y_c <= (fys + 5.0 / 3) * intrv))
-    {  
-      int coeff = round((xMouse + x_c) / float(intrv)) - 2 +
-        + (round((yMouse + y_c) / float(intrv)) - 2) * fxs;
+  {  
+    int coeff = round((xMouse + x_c) / float(intrv)) - 2 +
+      + (round((yMouse + y_c) / float(intrv)) - 2) * fxs;
       
-      if (dots[coeff].exist == false)
-      {  
-        dots[coeff].exist = true;
-        dots[coeff].clr = clr;
-        return 1;
-      }      
-    }
-    return 0;
+    if (dots[coeff].exist == false)
+    {  
+      dots[coeff].exist = true;
+      dots[coeff].clr = clr;
+      return true;
+    }      
+  }
+  return false;
 }
 
 void GetDotErase(Dots *dots, int fxs, int fys)
@@ -628,11 +801,11 @@ void GetDotErase(Dots *dots, int fxs, int fys)
        && (xMouse >= 5.0 / 3 * intrv) && (yMouse >= 5.0 / 3 * intrv)
        && (xMouse + x_c <= (fxs + 5.0 / 3) * intrv)
        && (yMouse + y_c <= (fys + 5.0 / 3) * intrv))
-    {  
-      int coeff = round((xMouse + x_c) / float(intrv)) - 2 +
-        + (round((yMouse + y_c) / float(intrv)) - 2) * fxs;
-      dots[coeff].exist = false;      
-    }
+  {  
+    int coeff = round((xMouse + x_c) / float(intrv)) - 2 +
+      + (round((yMouse + y_c) / float(intrv)) - 2) * fxs;
+    dots[coeff].exist = false;      
+  }
 }
 
 bool operator==(SDL_Color a, SDL_Color b)
@@ -715,11 +888,7 @@ void MainMenu()
     EnumerateField(field_y_base, field_x_base, my_Font);
     Zoom();
   
-    for (int i = 0; i < dots_menu_size; i++)
-    {
-      dots[i].visited = false;
-      dots[i].deadend = false;
-    }
+
     FindContour(dots, field_x_base, field_y_base);
     
     ButtonVector[0].Draw();
@@ -979,7 +1148,6 @@ void TwoPlayerMenu()
       && (ButtonVector[10].IsSelected) 
       && (event.type == SDL_MOUSEBUTTONUP))
       GameState = SAP;
-
 
     if ( (event.key.keysym.sym == SDLK_c) && (event.type == SDL_KEYDOWN) )
       ButtonVector[12].keytrick = true;
@@ -1457,10 +1625,10 @@ void GameSizeMenu()
     SDL_RenderCopy(renderer, textureText3, NULL, &rectangle3);
 
     SDL_DestroyTexture(textureText);
-    SDL_FreeSurface(surfaceText);
     SDL_DestroyTexture(textureText2);
-    SDL_FreeSurface(surfaceText2);
     SDL_DestroyTexture(textureText3);
+    SDL_FreeSurface(surfaceText);
+    SDL_FreeSurface(surfaceText2);
     SDL_FreeSurface(surfaceText3);
 
     ButtonVector[10].Draw();
@@ -1470,8 +1638,6 @@ void GameSizeMenu()
     mouse.DrawCircle(cur_color);
     SDL_RenderPresent(renderer);
   }
-
-
 }
 
 void GameRuleMenu()
@@ -1482,14 +1648,18 @@ void GameRuleMenu()
   SDL_Texture *textureText5;
   SDL_Rect rectangle4;
   SDL_Rect rectangle5;
-  rectangle4.w = LabelVector[9].drect.h;
-  rectangle4.h = LabelVector[9].drect.h;
-  rectangle4.x = ScWidth * 4 / 9 + LabelVector[9].drect.w;
+
+  rectangle_w = LabelVector[9].drect.h * 4 / 5;
+  rectangle_h = LabelVector[9].drect.h;
+
+  rectangle4.h = rectangle_h;
+  rectangle4.x = LabelVector[9].drect.x
+    + LabelVector[9].drect.w + ScWidth / 13;
   rectangle4.y = vo * 4;
 
-  rectangle5.w = LabelVector[10].drect.h;
-  rectangle5.h = LabelVector[10].drect.h;
-  rectangle5.x = ScWidth * 4 / 9 + LabelVector[10].drect.w;
+  rectangle5.h = rectangle_h;
+  rectangle5.x = LabelVector[10].drect.x 
+    + LabelVector[10].drect.w + ScWidth / 13;
   rectangle5.y = vo * 5;
 
   ButtonVector[11].keytrick = false;
@@ -1609,7 +1779,6 @@ void GameRuleMenu()
       (event.key.keysym.sym == SDLK_DOWN))
       maxeatendots -= 10;
 
-
     if (maxdotamount < 0)
       maxdotamount = 0;
 
@@ -1622,12 +1791,14 @@ void GameRuleMenu()
     if (maxeatendots > 700)
       maxeatendots = 700;
 
-    if (maxdotamount >= 100)
+    if (maxdotamount >= 1000)
+      rectangle4.w = rectangle_w * 4;
+    else if (maxdotamount >= 100)
       rectangle4.w = rectangle_w * 3;
-    else if (maxdotamount < 10)
-      rectangle4.w = rectangle_w;
-    else
+    else if (maxdotamount >= 10)
       rectangle4.w = rectangle_w * 2;
+    else
+      rectangle4.w = rectangle_w;
 
     if (maxeatendots >= 100) 
       rectangle5.w = rectangle_w * 3;
