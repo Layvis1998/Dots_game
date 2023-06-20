@@ -86,120 +86,163 @@ enum GameStateType {Menu, Credits, SAP, ONEPM, TWOPM,
                     THREEPM, FOURPM, GSM, GRM, Game};
 GameStateType GameState;
 
-void FindConnectedDots
-  (Dots* dots, int current, unordered_set <int> &uset, int fx, int fy)
+bool operator==(SDL_Color a, SDL_Color b)
 {
+  if ( (a.r == b.r) && (a.g == b.g) && (a.b == b.b) && (a.a == b.a) ) 
+    return true;
+  else
+    return false;
+}
+
+unordered_set<int> &operator-=(unordered_set<int> &a, unordered_set<int> &b)
+{
+  for (auto i = b.begin(); i != b.end(); i++ )
+  {
+    if (a.count(*i) )
+      a.erase(*i);
+  }
+  return a;
+}
+
+void FindConnectedDots (Dots* dots, int current, unordered_set <int> &uset,
+  int fx, int fy)
+{
+  SDL_Color C = dots[current].clr;
   dots[current].visited = true;
   uset.insert(current);
   
   //up-right direction
-  if ( (( current + 1) % fx != 0) && ( current - fx >= 0 )
-     && (dots[current + 1 - fx].exist == true)
-     && (dots[current + 1 - fx].deadend == false))
+  if (((current + 1) % fx != 0) && (current - fx >= 0)
+    && (dots[current + 1 - fx].exist == true)
+    && (dots[current + 1 - fx].deadend == false)
+    && (dots[current + 1 - fx].clr == C)
+    && (dots[current + 1 - fx].visited == false))
   {
-    if (dots[current + 1 - fx].visited == false)
-      FindConnectedDots(dots, current + 1 - fx, uset, fx, fy);
+    FindConnectedDots(dots, current + 1 - fx, uset, fx, fy);
   }
 
   // right direction
-  if (((current + 1) % fx != 0) && (dots[current + 1].exist == true)
-    && (dots[current + 1].deadend == false))
+  if (((current + 1) % fx != 0)
+    && (dots[current + 1].exist == true)
+    && (dots[current + 1].deadend == false)
+    && (dots[current + 1].clr == C)
+    && (dots[current + 1].visited == false))
   {                  
-    if (dots[current + 1].visited == false)
-      FindConnectedDots(dots, current + 1, uset, fx, fy);
+    FindConnectedDots(dots, current + 1, uset, fx, fy);
   }
 
   //down-right direction  
-  if ( (( current + 1) % fx != 0) && ( current + fx < fx * fy )
-     && (dots[current + 1 + fx].exist == true)
-     && (dots[current + 1 + fx].deadend == false))   
+  if (((current + 1) % fx != 0) && (current + fx < fx * fy)
+    && (dots[current + 1 + fx].exist == true)
+    && (dots[current + 1 + fx].deadend == false)
+    && (dots[current + 1 + fx].clr == C)
+    && (dots[current + 1 + fx].visited == false))   
   {
-    if (dots[current + 1 + fx].visited == false)
-      FindConnectedDots(dots, current + 1 + fx, uset, fx, fy);  
+    FindConnectedDots(dots, current + 1 + fx, uset, fx, fy);  
   }
 
   // down direction
-  if (( current + fx < fx * fy ) && (dots[current + fx].exist == true)
-    && (dots[current + fx].deadend == false))
+  if  ((current + fx < fx * fy)
+    && (dots[current + fx].exist == true)
+    && (dots[current + fx].deadend == false)
+    && (dots[current + fx].clr == C)
+    && (dots[current + fx].visited == false))
   { 
-    if (dots[current + fx].visited == false)
-      FindConnectedDots(dots, current + fx, uset, fx, fy);
+    FindConnectedDots(dots, current + fx, uset, fx, fy);
   }
 
   //down-left direction
-  if (( current % fx != 0) && ( current + fx < fx * fy )
-     && (dots[current - 1 + fx].exist == true)
-     && (dots[current - 1 + fx].deadend == false))
+  if  ((current % fx != 0) && (current + fx < fx * fy)
+    && (dots[current - 1 + fx].exist == true)
+    && (dots[current - 1 + fx].deadend == false)
+    && (dots[current - 1 + fx].clr == C)
+    && (dots[current - 1 + fx].visited == false))
   { 
-    if (dots[current - 1 + fx].visited == false)
-      FindConnectedDots(dots, current - 1 + fx, uset, fx, fy); 
+    FindConnectedDots(dots, current - 1 + fx, uset, fx, fy); 
   }
 
   // left direction
-  if ( ( current % fx != 0) && (dots[current - 1].exist == true)
-    && (dots[current - 1].deadend == false))
+  if  ((current % fx != 0)
+    && (dots[current - 1].exist == true)
+    && (dots[current - 1].deadend == false)
+    && (dots[current - 1].clr == C)
+    && (dots[current - 1].visited == false))
   {  
-    if (dots[current - 1].visited == false)
-      FindConnectedDots(dots, current - 1, uset, fx, fy);  
+    FindConnectedDots(dots, current - 1, uset, fx, fy);  
   }
 
   //up-left direction 
-  if ( ( current % fx != 0) && ( current - fx >= 0)
-     && (dots[current - 1 - fx].exist == true)
-     && (dots[current - 1 - fx].deadend == false))
+  if  ((current % fx != 0) && (current - fx >= 0)
+    && (dots[current - 1 - fx].exist == true)
+    && (dots[current - 1 - fx].deadend == false)
+    && (dots[current - 1 - fx].clr == C)
+    && (dots[current - 1 - fx].visited == false))
   {
-    if (dots[current - 1 - fx].visited == false)
-      FindConnectedDots(dots, current - 1 - fx, uset, fx, fy); 
+    FindConnectedDots(dots, current - 1 - fx, uset, fx, fy); 
   }
 
   // up diterction
-  if (( current - fx >= 0) && (dots[current - fx].exist == true)
-    && (dots[current - fx].deadend == false))                                        
+  if  ((current - fx >= 0)
+    && (dots[current - fx].exist == true)
+    && (dots[current - fx].deadend == false)
+    && (dots[current - fx].clr == C)
+    && (dots[current - fx].visited == false))                                        
   { 
-    if (dots[current - fx].visited == false)
-      FindConnectedDots(dots, current - fx, uset, fx, fy);
+    FindConnectedDots(dots, current - fx, uset, fx, fy);
   }
 }
 
 int DifferentWays( Dots* dots, int current, int fx , int fy)
 {
   int retval = 0;
+  SDL_Color C = dots[current].clr;
 
   if (((current + 1) % fx != 0)
     && (dots[current + 1].exist == true)
-    && (dots[current + 1].deadend != true))
+    && (dots[current + 1].deadend != true)
+    && (dots[current + 1].clr == C))
     retval++;
 
-  if ( (( current + 1) % fx != 0) && ( current + fx < fx * fy )
-     && (dots[current + 1 + fx].exist == true)
-     && (dots[current + 1 + fx].deadend != true))
+  if (((current + 1) % fx != 0) && (current + fx < fx * fy)
+    && (dots[current + 1 + fx].exist == true)
+    && (dots[current + 1 + fx].deadend != true)
+    && (dots[current + 1 + fx].clr == C))
     retval++;
 
-  if (( current + fx < fx * fy ) && (dots[current + fx].exist == true)
-    && (dots[current + fx].deadend != true))
+  if  ((current + fx < fx * fy)
+    && (dots[current + fx].exist == true)
+    && (dots[current + fx].deadend != true)
+    && (dots[current + fx].clr == C))
     retval++;
 
-  if (( current % fx != 0) && ( current + fx < fx * fy )
+  if  ((current % fx != 0) && (current + fx < fx * fy)
     && (dots[current - 1 + fx].exist == true)
-    && (dots[current - 1 + fx].deadend != true))
+    && (dots[current - 1 + fx].deadend != true)
+    && (dots[current - 1 + fx].clr == C))
     retval++;
 
-  if ( ( current % fx != 0) && (dots[current - 1].exist == true)
-    && (dots[current - 1].deadend != true))
+  if  ((current % fx != 0)
+    && (dots[current - 1].exist == true)
+    && (dots[current - 1].deadend != true)
+    && (dots[current - 1].clr == C))
     retval++;
 
-  if ( ( current % fx != 0) && ( current - fx >= 0)
+  if  ((current % fx != 0) && (current - fx >= 0)
     && (dots[current - 1 - fx].exist == true)
-    && (dots[current - 1 - fx].deadend != true))
+    && (dots[current - 1 - fx].deadend != true)
+    && (dots[current - 1 - fx].clr == C))
     retval++;
 
-  if (( current - fx >= 0) && (dots[current - fx].exist == true)
-    && (dots[current - fx].deadend != true))  
+  if  ((current - fx >= 0)
+    && (dots[current - fx].exist == true)
+    && (dots[current - fx].deadend != true)
+    && (dots[current - fx].clr == C))  
     retval++;
 
-  if ( (( current + 1) % fx != 0) && ( current - fx >= 0 )
-     && (dots[current + 1 - fx].exist == true)
-     && (dots[current + 1 - fx].deadend != true))
+  if (((current + 1) % fx != 0) && (current - fx >= 0)
+    && (dots[current + 1 - fx].exist == true)
+    && (dots[current + 1 - fx].deadend != true)
+    && (dots[current + 1 - fx].clr == C))
     retval++;
 
   return retval;
@@ -227,17 +270,20 @@ void DeleteBranches
   }
 }
 
-void ExtractCycle
-  (Dots* dots, int current, unordered_set <int> &uset, int fx, int fy)
+void ExtractCycle (Dots* dots, int current, unordered_set <int> &uset,
+  int fx, int fy)
 {
+  SDL_Color C = dots[current].clr;
   dots[current].cycle = true;
   uset.insert(current);
 
   //up-right direction
-  if ( (( current + 1) % fx != 0) && ( current - fx >= 0 )
-     && (dots[current + 1 - fx].exist == true)
-     && (dots[current + 1 - fx].deadend == false)
-     && (dots[current + 1 - fx].cycle == false))
+  if (((current + 1) % fx != 0)
+    && (current - fx >= 0 )
+    && (dots[current + 1 - fx].exist == true)
+    && (dots[current + 1 - fx].deadend == false)
+    && (dots[current + 1 - fx].cycle == false)
+    && (dots[current + 1 - fx].clr == C) )
   {
     ExtractCycle(dots, current + 1 - fx, uset, fx, fy);
   }
@@ -245,58 +291,72 @@ void ExtractCycle
   else if (((current + 1) % fx != 0)
     && (dots[current + 1].exist == true)
     && (dots[current + 1].deadend == false)
-    && (dots[current + 1].cycle == false))
+    && (dots[current + 1].cycle == false)
+    && (dots[current + 1].clr == C))
   {                  
     ExtractCycle(dots, current + 1, uset, fx, fy);
   }
   //down-right direction  
-  else if ( (( current + 1) % fx != 0) && ( current + fx < fx * fy )
-     && (dots[current + 1 + fx].exist == true)
-     && (dots[current + 1 + fx].deadend == false)
-     && (dots[current + 1 + fx].cycle == false))   
+  else if (((current + 1) % fx != 0)
+    && ( current + fx < fx * fy )
+    && (dots[current + 1 + fx].exist == true)
+    && (dots[current + 1 + fx].deadend == false)
+    && (dots[current + 1 + fx].cycle == false)
+    && (dots[current + 1 + fx].clr == C))   
   {
     ExtractCycle(dots, current + 1 + fx, uset, fx, fy);  
   }
   // down direction
-  else if (( current + fx < fx * fy ) && (dots[current + fx].exist == true)
+  else if ((current + fx < fx * fy)
+    && (dots[current + fx].exist == true)
     && (dots[current + fx].deadend == false)
-    && (dots[current + fx].cycle == false))
+    && (dots[current + fx].cycle == false)
+    && (dots[current + fx].clr == C))
   { 
     ExtractCycle(dots, current + fx, uset, fx, fy);
   }
   //down-left direction
-  else if (( current % fx != 0) && ( current + fx < fx * fy )
-     && (dots[current - 1 + fx].exist == true)
-     && (dots[current - 1 + fx].deadend == false)
-     && (dots[current - 1 + fx].cycle == false))
+  else if ((current % fx != 0)
+    && (current + fx < fx * fy)
+    && (dots[current - 1 + fx].exist == true)
+    && (dots[current - 1 + fx].deadend == false)
+    && (dots[current - 1 + fx].cycle == false)
+    && (dots[current - 1 + fx].clr == C))
   { 
     ExtractCycle(dots, current - 1 + fx, uset, fx, fy); 
   }
   // left direction
-  else if ( ( current % fx != 0) && (dots[current - 1].exist == true)
+  else if (( current % fx != 0)
+    && (dots[current - 1].exist == true)
     && (dots[current - 1].deadend == false)
-    && (dots[current - 1].cycle == false))
+    && (dots[current - 1].cycle == false)
+    && (dots[current - 1].clr == C))
   {  
     ExtractCycle(dots, current - 1, uset, fx, fy);  
   }
   //up-left direction 
-  else if ( ( current % fx != 0) && ( current - fx >= 0)
-     && (dots[current - 1 - fx].exist == true)
-     && (dots[current - 1 - fx].deadend == false)
-     && (dots[current - 1 - fx].cycle == false))
+  else if ((current % fx != 0)
+    && (current - fx >= 0)
+    && (dots[current - 1 - fx].exist == true)
+    && (dots[current - 1 - fx].deadend == false)
+    && (dots[current - 1 - fx].cycle == false)
+    && (dots[current - 1 - fx].clr == C))
   {
     ExtractCycle(dots, current - 1 - fx, uset, fx, fy); 
   }
   // up diterction
-  else if (( current - fx >= 0) && (dots[current - fx].exist == true)
+  else if ((current - fx >= 0)
+    && (dots[current - fx].exist == true)
     && (dots[current - fx].deadend == false)
-    && (dots[current - fx].cycle == false))                                        
+    && (dots[current - fx].cycle == false)
+    && (dots[current - fx].clr == C))                                        
   { 
     ExtractCycle(dots, current - fx, uset, fx, fy);
   }
 }
 
-int DifferentWaysE( Dots* dots, unordered_set <int> uset, int current, int fx , int fy)
+int DifferentWaysE
+  (Dots* dots, unordered_set <int> uset, int current, int fx , int fy)
 {
   int retval = 0;
 
@@ -359,22 +419,6 @@ int Min (unordered_set <int> uset)
   return min;
 }
 
-void GetReadyForCycleExtraction(Dots* dots, unordered_set <int> uset)
-{
-
-}
-
-unordered_set<int> &operator-=(unordered_set<int> &a, unordered_set<int> &b)
-{
-  for (auto i = b.begin(); i != b.end(); i++ )
-  {
-    if (a.count(*i) )
-      a.erase(*i);
-  }
-  
-  return a;
-}
-
 void FindContour (Dots* dots, int fx, int fy)
 {
   int current = 0;
@@ -397,11 +441,11 @@ void FindContour (Dots* dots, int fx, int fy)
     unordered_set <int> ConnectedCycles;
     FindConnectedDots(dots, current, ConnectedCycles, fx, fy);
     DeleteBranches(dots, current, ConnectedCycles, fx, fy);
-    //cout << "Connected cycles size = "  << ConnectedCycles.size()  << endl;
+    cout << "Connected cycles size = "  << ConnectedCycles.size()  << endl;
 
     while ((ConnectedCycles.size() != 0))
     { 
-      for (auto i = ConnectedCycles.begin(); i != ConnectedCycles.end(); i++ )
+      for (auto i = ConnectedCycles.begin(); i != ConnectedCycles.end(); i++)
         dots[*i].cycle = false;
 
       unordered_set <int> Cycle;
@@ -411,7 +455,7 @@ void FindContour (Dots* dots, int fx, int fy)
       cout << "Extracted cycle size = "  << Cycle.size()  << endl;
       ConnectedCycles -= Cycle;
       DeleteBranchesE(dots, start, ConnectedCycles, fx, fy);
-      //cout << " New Connected cycles size = "  << ConnectedCycles.size()  << endl;
+      //cout << " New Connected cycles size = " << ConnectedCycles.size() << endl;
     }
   }
 
@@ -767,10 +811,10 @@ bool GetDotInput(Dots *dots, SDL_Color clr, int fxs, int fys)
 {
   if ( (event.button.button == SDL_BUTTON_LEFT) &&
      (event.type == SDL_MOUSEBUTTONUP) &&
-     ( (( (yMouse) % intrv) <= intrv / 3.0)
+     (  (((yMouse) % intrv) <= intrv / 3.0)
      || (((yMouse) % intrv) >= intrv * 2 / 3)) 
      && 
-     ( (( (xMouse) % intrv) <= intrv / 3.0)
+       ((((xMouse) % intrv) <= intrv / 3.0)
      || (((xMouse) % intrv) >= intrv * 2 / 3))
      && (xMouse >= 5.0 / 3 * intrv) && (yMouse >= 5.0 / 3 * intrv)
      && (xMouse + x_c <= (fxs + 5.0 / 3) * intrv)
@@ -791,12 +835,12 @@ bool GetDotInput(Dots *dots, SDL_Color clr, int fxs, int fys)
 
 void GetDotErase(Dots *dots, int fxs, int fys)
 {
-  if ( (event.button.button == SDL_BUTTON_RIGHT) &&
-       (event.type == SDL_MOUSEBUTTONUP) &&
-       ( (( (yMouse) % intrv) <= intrv / 3.0) 
+  if ((event.button.button == SDL_BUTTON_RIGHT) &&
+      (event.type == SDL_MOUSEBUTTONUP) &&
+      (   (((yMouse) % intrv) <= intrv / 3.0) 
        || (((yMouse) % intrv) >= intrv * 2 / 3)) 
        && 
-       ((( (xMouse) % intrv) <= intrv / 3.0)
+         ((((xMouse) % intrv) <= intrv / 3.0)
        || (((xMouse) % intrv) >= intrv * 2 / 3))
        && (xMouse >= 5.0 / 3 * intrv) && (yMouse >= 5.0 / 3 * intrv)
        && (xMouse + x_c <= (fxs + 5.0 / 3) * intrv)
@@ -806,14 +850,6 @@ void GetDotErase(Dots *dots, int fxs, int fys)
       + (round((yMouse + y_c) / float(intrv)) - 2) * fxs;
     dots[coeff].exist = false;      
   }
-}
-
-bool operator==(SDL_Color a, SDL_Color b)
-{
-  if ( (a.r == b.r) && (a.g == b.g) && (a.b == b.b) && (a.a == b.a) ) 
-    return true;
-  else
-    return false;
 }
 
 void MainMenu()
@@ -882,13 +918,10 @@ void MainMenu()
     SDL_RenderClear(renderer);
     SDL_SetRenderDrawColor(renderer, 0, 0, 0, SDL_ALPHA_OPAQUE);
     MoveBoard(field_x_base, field_y_base);
-
     DrawField(field_x_base, field_y_base);
     DrawDots(dots, dots_menu_size, field_x_size);
     EnumerateField(field_y_base, field_x_base, my_Font);
     Zoom();
-  
-
     FindContour(dots, field_x_base, field_y_base);
     
     ButtonVector[0].Draw();
@@ -942,15 +975,16 @@ void CreditsMenu()
     SDL_RenderClear(renderer);
     SDL_SetRenderDrawColor(renderer, 0, 0, 0, SDL_ALPHA_OPAQUE);
     MoveBoard(field_x_credits, field_y_credits);
-
     DrawField(field_x_credits, field_y_credits);
     DrawDots(dots_c, dots_credits_size, field_x_credits);
     EnumerateField(field_y_credits, field_x_credits, my_Font);
     Zoom();
-    mouse.DrawCircle(cur_color);
     FillCredits(my_Font);
+    FindContour(dots_c, field_x_credits, field_y_credits);
 
     ButtonVector[9].Draw();
+    mouse.DrawCircle(cur_color);
+    
     SDL_RenderPresent(renderer);
   }
 }
@@ -1046,6 +1080,7 @@ void SelectAmountOfPlayersMenu()
     DrawDots(dots, dots_menu_size, field_x_size);
     Zoom();
     EnumerateField(field_y_base, field_x_base, my_Font);
+    FindContour(dots, field_x_base, field_y_base);
 
     LabelVector[0].Draw();
     ButtonVector[5].Draw();
@@ -1103,6 +1138,7 @@ void OnePlayerMenu()
     DrawDots(dots, dots_menu_size, field_x_size);
     EnumerateField(field_y_base, field_x_base, my_Font);
     Zoom();
+    FindContour(dots, field_x_base, field_y_base);
 
     LabelVector[1].Draw();
     LabelVector[2].Draw();
@@ -1192,6 +1228,7 @@ void TwoPlayerMenu()
     GetDotInput(dots, cur_color, field_x_base, field_y_base);
     GetDotErase(dots, field_x_base, field_y_base);
     DrawDots(dots, dots_menu_size, field_x_size);
+    FindContour(dots, field_x_base, field_y_base);
 
     ClrButtonVector[0].Draw();
     ClrButtonVector[1].Draw();
@@ -1294,6 +1331,7 @@ void ThreePlayerMenu()
     GetDotInput(dots, cur_color, field_x_base, field_y_base);
     GetDotErase(dots, field_x_base, field_y_base);
     DrawDots(dots, dots_menu_size, field_x_size);
+    FindContour(dots, field_x_base, field_y_base);
 
     ClrButtonVector[2].Draw();
     ClrButtonVector[3].Draw();
@@ -1403,6 +1441,7 @@ void FourPlayerMenu()
     GetDotInput(dots, cur_color, field_x_base, field_y_base);
     GetDotErase(dots, field_x_base, field_y_base);
     DrawDots(dots, dots_menu_size, field_x_size);
+    FindContour(dots, field_x_base, field_y_base);
 
     LabelVector[3].Draw();
     LabelVector[4].Draw();
@@ -1458,26 +1497,26 @@ void GameSizeMenu()
     ButtonVector[12].Update(mouse);
 
     SDL_PollEvent(&event);
-    if ( (event.type == SDL_KEYDOWN) && (event.type == SDL_QUIT) )
+    if ((event.type == SDL_KEYDOWN) && (event.type == SDL_QUIT))
       exit(0);
 
     if (event.type == SDL_KEYDOWN && event.key.keysym.sym == SDLK_ESCAPE)
       GameState = Menu;
 
-    if ((event.key.keysym.sym == SDLK_c) && (event.type == SDL_KEYUP) )
+    if ((event.key.keysym.sym == SDLK_c) && (event.type == SDL_KEYUP))
       GameState = GRM;
 
-    if ( (event.button.button == SDL_BUTTON_LEFT) && (ButtonVector[12].IsSelected)
+    if ((event.button.button == SDL_BUTTON_LEFT) && (ButtonVector[12].IsSelected)
       && (event.type == SDL_MOUSEBUTTONUP)) 
       GameState = GRM;
 
-    if( (event.key.keysym.sym == SDLK_b) && (event.type == SDL_KEYDOWN) )
+    if ((event.key.keysym.sym == SDLK_b) && (event.type == SDL_KEYDOWN))
       ButtonVector[10].keytrick = true;
 
-    if ( (event.key.keysym.sym == SDLK_c) && (event.type == SDL_KEYDOWN) )
+    if ((event.key.keysym.sym == SDLK_c) && (event.type == SDL_KEYDOWN))
       ButtonVector[12].keytrick = true;
 
-    if ( (event.key.keysym.sym == SDLK_b) && (event.type == SDL_KEYUP) )
+    if ((event.key.keysym.sym == SDLK_b) && (event.type == SDL_KEYUP))
     {
       switch (pa_back)
       {
@@ -1503,9 +1542,9 @@ void GameSizeMenu()
       }
     }
 
-    if ( (event.button.button == SDL_BUTTON_LEFT) && (ButtonVector[10].IsSelected)
+    if ((event.button.button == SDL_BUTTON_LEFT) && (ButtonVector[10].IsSelected)
       && (event.type == SDL_MOUSEBUTTONUP)) 
-   {
+    {
       switch (pa_back)
       {
         case 1:
@@ -1543,44 +1582,44 @@ void GameSizeMenu()
     surfaceText2 = TTF_RenderText_Solid(my_Font, field_y, {180, 255, 100});
     textureText2 = SDL_CreateTextureFromSurface(renderer, surfaceText2);
     
-    if ( (SDL_HasIntersection(&rectangle, &mouse.point)) &&
+    if ((SDL_HasIntersection(&rectangle, &mouse.point)) &&
         (event.type == SDL_KEYDOWN) &&
         (event.key.keysym.sym == SDLK_w))
       game_x_size++;
 
-    if ( (SDL_HasIntersection(&rectangle, &mouse.point)) &&
+    if ((SDL_HasIntersection(&rectangle, &mouse.point)) &&
         (event.type == SDL_KEYDOWN) &&
         (event.key.keysym.sym == SDLK_UP))
       game_x_size += 10;
 
-    if ( (SDL_HasIntersection(&rectangle, &mouse.point))
-      && (event.type == SDL_KEYDOWN) &&
+    if ((SDL_HasIntersection(&rectangle, &mouse.point)) &&
+       (event.type == SDL_KEYDOWN) &&
       (event.key.keysym.sym == SDLK_s))
       game_x_size--;
 
-    if ( (SDL_HasIntersection(&rectangle, &mouse.point))
-      && (event.type == SDL_KEYDOWN) &&
-      (event.key.keysym.sym == SDLK_DOWN))
+    if ((SDL_HasIntersection(&rectangle, &mouse.point)) &&
+       (event.type == SDL_KEYDOWN) &&
+       (event.key.keysym.sym == SDLK_DOWN))
       game_x_size -= 10;
 
-    if ( (SDL_HasIntersection(&rectangle2, &mouse.point))
-      && (event.type == SDL_KEYDOWN) &&
-      ((event.key.keysym.sym == SDLK_w) || (event.key.keysym.sym == SDLK_UP)))
+    if ((SDL_HasIntersection(&rectangle2, &mouse.point)) &&
+       (event.type == SDL_KEYDOWN) &&
+       ((event.key.keysym.sym == SDLK_w) || (event.key.keysym.sym == SDLK_UP)))
       game_y_size++;
 
-    if ( (SDL_HasIntersection(&rectangle2, &mouse.point))
-      && (event.type == SDL_KEYDOWN) &&
-      (event.key.keysym.sym == SDLK_UP))
+    if ((SDL_HasIntersection(&rectangle2, &mouse.point)) && 
+       (event.type == SDL_KEYDOWN) &&
+       (event.key.keysym.sym == SDLK_UP))
       game_y_size += 10;
 
-    if ( (SDL_HasIntersection(&rectangle2, &mouse.point))
-      && (event.type == SDL_KEYDOWN) &&
-      (event.key.keysym.sym == SDLK_s))
+    if ((SDL_HasIntersection(&rectangle2, &mouse.point)) && 
+       (event.type == SDL_KEYDOWN) &&
+       (event.key.keysym.sym == SDLK_s))
       game_y_size--;
 
-    if ( (SDL_HasIntersection(&rectangle2, &mouse.point))
-      && (event.type == SDL_KEYDOWN) &&
-      (event.key.keysym.sym == SDLK_DOWN))
+    if ((SDL_HasIntersection(&rectangle2, &mouse.point)) && 
+       (event.type == SDL_KEYDOWN) &&
+       (event.key.keysym.sym == SDLK_DOWN))
       game_y_size -= 10;
 
     if (game_y_size < 5)
@@ -1615,7 +1654,7 @@ void GameSizeMenu()
     SDL_SetRenderDrawColor(renderer, 0, 0, 0, SDL_ALPHA_OPAQUE);
     DrawField(game_x_size, game_y_size);
     if (!SDL_HasIntersection(&rectangle, &mouse.point) && 
-      !SDL_HasIntersection(&rectangle2, &mouse.point))
+        !SDL_HasIntersection(&rectangle2, &mouse.point))
       MoveBoard(game_x_size, game_y_size);
     Zoom();
     EnumerateField(game_y_size, game_x_size, my_Font);
@@ -1674,41 +1713,41 @@ void GameRuleMenu()
     ButtonVector[14].Update(mouse); 
 
     SDL_PollEvent(&event);
-    if ( (event.type == SDL_KEYDOWN) && (event.type == SDL_QUIT) )
+    if ((event.type == SDL_KEYDOWN) && (event.type == SDL_QUIT))
       exit(0);
 
-    if ( (event.key.keysym.sym == SDLK_b) && (event.type == SDL_KEYUP) )
+    if ((event.key.keysym.sym == SDLK_b) && (event.type == SDL_KEYUP))
       GameState = GSM;
 
-    if( (event.key.keysym.sym == SDLK_b) && (event.type == SDL_KEYDOWN) )
+    if ( (event.key.keysym.sym == SDLK_b) && (event.type == SDL_KEYDOWN) )
       ButtonVector[11].keytrick = true;
 
-    if ( (event.button.button == SDL_BUTTON_LEFT)
-      && (ButtonVector[11].IsSelected)
-      && (event.type == SDL_MOUSEBUTTONUP)) 
+    if ((event.button.button == SDL_BUTTON_LEFT) && 
+       (ButtonVector[11].IsSelected) && 
+       (event.type == SDL_MOUSEBUTTONUP)) 
       GameState = GSM;
 
     if ((event.type == SDL_KEYDOWN) && (event.key.keysym.sym == SDLK_ESCAPE))
       GameState = Menu;
 
-    if ((event.key.keysym.sym == SDLK_t) && (event.type == SDL_KEYUP) )
+    if ((event.key.keysym.sym == SDLK_t) && (event.type == SDL_KEYUP))
     { 
       classic = false; 
       GameState = Game;
     }
 
-    if ( (event.button.button == SDL_BUTTON_LEFT)
-      && (ButtonVector[14].IsSelected)
-      && (event.type == SDL_MOUSEBUTTONUP)) 
+    if ((event.button.button == SDL_BUTTON_LEFT) &&
+       (ButtonVector[14].IsSelected) && 
+       (event.type == SDL_MOUSEBUTTONUP)) 
     { 
       classic = false; 
       GameState = Game;
     }
 
-    if ( (event.key.keysym.sym == SDLK_t) && (event.type == SDL_KEYDOWN) )
+    if ((event.key.keysym.sym == SDLK_t) && (event.type == SDL_KEYDOWN))
       ButtonVector[14].keytrick = true;
 
-    if ((event.key.keysym.sym == SDLK_c) && (event.type == SDL_KEYUP) )
+    if ((event.key.keysym.sym == SDLK_c) && (event.type == SDL_KEYUP))
       GameState = Game;
 
     if ( (event.button.button == SDL_BUTTON_LEFT)
@@ -1716,10 +1755,10 @@ void GameRuleMenu()
       && (event.type == SDL_MOUSEBUTTONUP)) 
       GameState = Game;
 
-    if ( (event.key.keysym.sym == SDLK_c) && (event.type == SDL_KEYDOWN) )
+    if ((event.key.keysym.sym == SDLK_c) && (event.type == SDL_KEYDOWN))
       ButtonVector[13].keytrick = true;
 
-    if ( (event.key.keysym.sym == SDLK_b) && (event.type == SDL_KEYUP) )  
+    if ((event.key.keysym.sym == SDLK_b) && (event.type == SDL_KEYUP))  
       GameState = GSM;
 
     string temp_str;
@@ -1739,44 +1778,44 @@ void GameRuleMenu()
     surfaceText5 = TTF_RenderText_Solid(my_Font, field_y, {180, 255, 100});
     textureText5 = SDL_CreateTextureFromSurface(renderer, surfaceText5);
     
-    if ( (SDL_HasIntersection(&rectangle4, &mouse.point)) &&
-        (event.type == SDL_KEYDOWN) &&
-        ((event.key.keysym.sym == SDLK_w) || (event.key.keysym.sym == SDLK_UP)))
+    if ((SDL_HasIntersection(&rectangle4, &mouse.point)) &&
+       (event.type == SDL_KEYDOWN) &&
+       ((event.key.keysym.sym == SDLK_w) || (event.key.keysym.sym == SDLK_UP)))
       maxdotamount++;
 
-    if ( (SDL_HasIntersection(&rectangle4, &mouse.point)) &&
-        (event.type == SDL_KEYDOWN) &&
-        (event.key.keysym.sym == SDLK_UP))
+    if ((SDL_HasIntersection(&rectangle4, &mouse.point)) &&
+       (event.type == SDL_KEYDOWN) &&
+       (event.key.keysym.sym == SDLK_UP))
       maxdotamount += 10;
 
-    if ( (SDL_HasIntersection(&rectangle4, &mouse.point))
-      && (event.type == SDL_KEYDOWN) &&
-      (event.key.keysym.sym == SDLK_s))
+    if ((SDL_HasIntersection(&rectangle4, &mouse.point)) &&
+       (event.type == SDL_KEYDOWN) &&
+       (event.key.keysym.sym == SDLK_s))
       maxdotamount--;
 
-    if ( (SDL_HasIntersection(&rectangle4, &mouse.point))
-      && (event.type == SDL_KEYDOWN) &&
-      (event.key.keysym.sym == SDLK_DOWN))
+    if ((SDL_HasIntersection(&rectangle4, &mouse.point)) &&
+       (event.type == SDL_KEYDOWN) &&
+       (event.key.keysym.sym == SDLK_DOWN))
       maxdotamount -= 10 ;
 
-    if ( (SDL_HasIntersection(&rectangle5, &mouse.point))
-      && (event.type == SDL_KEYDOWN) &&
-      (event.key.keysym.sym == SDLK_w))
+    if ((SDL_HasIntersection(&rectangle5, &mouse.point)) &&
+       (event.type == SDL_KEYDOWN) &&
+       (event.key.keysym.sym == SDLK_w))
       maxeatendots++;
 
-    if ( (SDL_HasIntersection(&rectangle5, &mouse.point))
-      && (event.type == SDL_KEYDOWN) &&
-      (event.key.keysym.sym == SDLK_UP))
+    if ((SDL_HasIntersection(&rectangle5, &mouse.point)) &&
+       (event.type == SDL_KEYDOWN) &&
+       (event.key.keysym.sym == SDLK_UP))
       maxeatendots += 10;
 
-    if ( (SDL_HasIntersection(&rectangle5, &mouse.point))
-      && (event.type == SDL_KEYDOWN) &&
-      (event.key.keysym.sym == SDLK_s))
+    if ((SDL_HasIntersection(&rectangle5, &mouse.point)) &&
+       (event.type == SDL_KEYDOWN) &&
+       (event.key.keysym.sym == SDLK_s))
       maxeatendots--;
 
-    if ( (SDL_HasIntersection(&rectangle5, &mouse.point))
-      && (event.type == SDL_KEYDOWN) &&
-      (event.key.keysym.sym == SDLK_DOWN))
+    if ((SDL_HasIntersection(&rectangle5, &mouse.point)) &&
+       (event.type == SDL_KEYDOWN) &&
+       (event.key.keysym.sym == SDLK_DOWN))
       maxeatendots -= 10;
 
     if (maxdotamount < 0)
@@ -1870,7 +1909,7 @@ void GameItself()
     if (event.type == SDL_QUIT)
       break;
 
-    if (event.type == SDL_KEYDOWN && event.key.keysym.sym == SDLK_ESCAPE)
+    if ((event.type == SDL_KEYDOWN) && (event.key.keysym.sym == SDLK_ESCAPE))
       exit(0);
 
     SDL_GetMouseState(&xMouse,&yMouse);
