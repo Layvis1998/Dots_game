@@ -2,8 +2,10 @@
 #include <err.h>
 #include <string>
 #include <queue>
+#include <climits>
 #include <unordered_set>
 #include <stack>
+#include <algorithm>
 #include <SDL2/SDL.h>
 
 #include <SDL2/SDL_image.h>
@@ -11,7 +13,7 @@
 #include "headers/Button.h"
 #include "headers/Label.h"
 #include "headers/ColorButton.h"
-#include <climits>
+
 
 #if __linux__
   #include <X11/Xlib.h>
@@ -92,6 +94,14 @@ bool operator==(SDL_Color a, SDL_Color b)
     return true;
   else
     return false;
+}
+
+bool operator!=(SDL_Color a, SDL_Color b)
+{
+  if ( (a.r == b.r) && (a.g == b.g) && (a.b == b.b) && (a.a == b.a) ) 
+    return false;
+  else
+    return true;
 }
 
 unordered_set<int> &operator-=(unordered_set<int> &a, unordered_set<int> &b)
@@ -408,6 +418,40 @@ void DeleteBranchesE
   }
 }
 
+bool CheckForColor(unordered_set <int> CycleSet, Dots* dots, int fx)
+{
+  bool Check = false;
+  vector <int> CycleVector;
+  for (auto i = CycleSet.begin(); i != CycleSet.end(); i++)
+    CycleVector.push_back(*i);
+
+  sort(CycleVector.begin(), CycleVector.end());
+
+  int i = 0;
+  while (i < CycleVector.size())
+  {
+    vector <int> SameLine;
+    SameLine.push_back(CycleVector[i]);
+
+    i++;
+    while ((i < CycleVector.size()) && (CycleVector[i] / fx) == (SameLine[0] / fx))
+    {
+      SameLine.push_back(CycleVector[i]);
+      i++;
+    }
+    
+    for (int k = SameLine.front(); k < SameLine.back(); k++)
+    {
+      if ((dots[SameLine.back()].clr != dots[k].clr) && (dots[k].exist == true))
+      {
+        Check = true;
+        return Check;
+      }
+    }
+  }
+  return Check;
+}
+
 int Min (unordered_set <int> uset)
 {
   int min = INT_MAX;
@@ -419,7 +463,7 @@ int Min (unordered_set <int> uset)
   return min;
 }
 
-void FindContour (Dots* dots, int fx, int fy)
+void ProcessDotInteraction (Dots* dots, int fx, int fy)
 {
   int current = 0;
   for (int i = 0; i < fx * fy; i++)
@@ -453,9 +497,10 @@ void FindContour (Dots* dots, int fx, int fy)
       ExtractCycle(dots, start, Cycle, fx, fy);
       DeleteBranchesE(dots, start, Cycle, fx, fy);
       cout << "Extracted cycle size = "  << Cycle.size()  << endl;
+      cout << "needs to be colored: " << boolalpha << CheckForColor(Cycle, dots, fx)
+        << endl;
       ConnectedCycles -= Cycle;
       DeleteBranchesE(dots, start, ConnectedCycles, fx, fy);
-      //cout << " New Connected cycles size = " << ConnectedCycles.size() << endl;
     }
   }
 
@@ -880,30 +925,30 @@ void MainMenu()
     if ((event.type == SDL_KEYDOWN) && (event.type == SDL_QUIT))
       exit(0);
 
-    if ( (event.button.button == SDL_BUTTON_LEFT) && (ButtonVector[4].IsSelected)
+    if ((event.button.button == SDL_BUTTON_LEFT) && (ButtonVector[4].IsSelected)
       && (event.type == SDL_MOUSEBUTTONUP)) 
       exit(0);
 
-    if ( (event.key.keysym.sym == SDLK_e) && (event.type == SDL_KEYUP) )
+    if ((event.key.keysym.sym == SDLK_e) && (event.type == SDL_KEYUP))
       exit(0);
 
-    if( (event.key.keysym.sym == SDLK_e) && (event.type == SDL_KEYDOWN) )
+    if ((event.key.keysym.sym == SDLK_e) && (event.type == SDL_KEYDOWN))
       ButtonVector[4].keytrick = true;
 
-    if( (event.key.keysym.sym == SDLK_n) && (event.type == SDL_KEYDOWN) )
+    if ((event.key.keysym.sym == SDLK_n) && (event.type == SDL_KEYDOWN))
       ButtonVector[0].keytrick = true;
 
-    if ( (event.key.keysym.sym == SDLK_n) && (event.type == SDL_KEYUP) )
+    if ((event.key.keysym.sym == SDLK_n) && (event.type == SDL_KEYUP))
       GameState = SAP;
 
     if ((event.button.button == SDL_BUTTON_LEFT) && (ButtonVector[0].IsSelected)
       && (event.type == SDL_MOUSEBUTTONUP)) 
       GameState = SAP;
 
-    if( (event.key.keysym.sym == SDLK_c) && (event.type == SDL_KEYDOWN) )
+    if ((event.key.keysym.sym == SDLK_c) && (event.type == SDL_KEYDOWN))
       ButtonVector[3].keytrick = true;
 
-    if ( (event.key.keysym.sym == SDLK_c) && (event.type == SDL_KEYUP) )
+    if ((event.key.keysym.sym == SDLK_c) && (event.type == SDL_KEYUP))
       GameState = Credits;
 
     if ((event.button.button == SDL_BUTTON_LEFT) && (ButtonVector[3].IsSelected)
@@ -922,7 +967,7 @@ void MainMenu()
     DrawDots(dots, dots_menu_size, field_x_size);
     EnumerateField(field_y_base, field_x_base, my_Font);
     Zoom();
-    FindContour(dots, field_x_base, field_y_base);
+    ProcessDotInteraction(dots, field_x_base, field_y_base);
     
     ButtonVector[0].Draw();
     ButtonVector[1].Draw();
@@ -980,7 +1025,7 @@ void CreditsMenu()
     EnumerateField(field_y_credits, field_x_credits, my_Font);
     Zoom();
     FillCredits(my_Font);
-    FindContour(dots_c, field_x_credits, field_y_credits);
+    ProcessDotInteraction(dots_c, field_x_credits, field_y_credits);
 
     ButtonVector[9].Draw();
     mouse.DrawCircle(cur_color);
@@ -1080,7 +1125,7 @@ void SelectAmountOfPlayersMenu()
     DrawDots(dots, dots_menu_size, field_x_size);
     Zoom();
     EnumerateField(field_y_base, field_x_base, my_Font);
-    FindContour(dots, field_x_base, field_y_base);
+    ProcessDotInteraction(dots, field_x_base, field_y_base);
 
     LabelVector[0].Draw();
     ButtonVector[5].Draw();
@@ -1138,7 +1183,7 @@ void OnePlayerMenu()
     DrawDots(dots, dots_menu_size, field_x_size);
     EnumerateField(field_y_base, field_x_base, my_Font);
     Zoom();
-    FindContour(dots, field_x_base, field_y_base);
+    ProcessDotInteraction(dots, field_x_base, field_y_base);
 
     LabelVector[1].Draw();
     LabelVector[2].Draw();
@@ -1228,7 +1273,7 @@ void TwoPlayerMenu()
     GetDotInput(dots, cur_color, field_x_base, field_y_base);
     GetDotErase(dots, field_x_base, field_y_base);
     DrawDots(dots, dots_menu_size, field_x_size);
-    FindContour(dots, field_x_base, field_y_base);
+    ProcessDotInteraction(dots, field_x_base, field_y_base);
 
     ClrButtonVector[0].Draw();
     ClrButtonVector[1].Draw();
@@ -1331,7 +1376,7 @@ void ThreePlayerMenu()
     GetDotInput(dots, cur_color, field_x_base, field_y_base);
     GetDotErase(dots, field_x_base, field_y_base);
     DrawDots(dots, dots_menu_size, field_x_size);
-    FindContour(dots, field_x_base, field_y_base);
+    ProcessDotInteraction(dots, field_x_base, field_y_base);
 
     ClrButtonVector[2].Draw();
     ClrButtonVector[3].Draw();
@@ -1441,7 +1486,7 @@ void FourPlayerMenu()
     GetDotInput(dots, cur_color, field_x_base, field_y_base);
     GetDotErase(dots, field_x_base, field_y_base);
     DrawDots(dots, dots_menu_size, field_x_size);
-    FindContour(dots, field_x_base, field_y_base);
+    ProcessDotInteraction(dots, field_x_base, field_y_base);
 
     LabelVector[3].Draw();
     LabelVector[4].Draw();
@@ -1675,6 +1720,7 @@ void GameSizeMenu()
     LabelVector[6].Draw();
     LabelVector[7].Draw();
     mouse.DrawCircle(cur_color);
+
     SDL_RenderPresent(renderer);
   }
 }
@@ -1873,6 +1919,7 @@ void GameRuleMenu()
     LabelVector[9].Draw();
     LabelVector[10].Draw();
     mouse.DrawCircle(cur_color);
+
     SDL_RenderPresent(renderer);
   }
 }
@@ -1905,6 +1952,7 @@ void GameItself()
   while (1)
   {
     mouse.Update();
+
     SDL_PollEvent(&event);
     if (event.type == SDL_QUIT)
       break;
@@ -1957,8 +2005,10 @@ void GameItself()
     DrawDots(dots_g, dots_game_size, game_x_size);
     Zoom();
     EnumerateField(game_y_size, game_x_size, my_Font);
+    ProcessDotInteraction(dots_g, game_x_size, game_y_size);
 
     mouse.DrawCircle(cur_color);
+
     SDL_RenderPresent(renderer);    
   }
   delete dots_g;
@@ -1967,13 +2017,6 @@ void GameItself()
 
 int main(int argc, char *argv[])
 {
-  using std::cout;
-  using std::cin;
-  using std::endl;
-  using std::max;
-  using std::to_string;
-  using std::string;
-  using std::pair;
 
 ///////////////////////////////Finding out display parameters///////////////////
   #if __linux__
@@ -2148,7 +2191,7 @@ int main(int argc, char *argv[])
   PaLabel.srect.y = 0;
   PaLabel.drect.x = ScWidth / 2 - PaLabel.drect.w / 2; 
   PaLabel.drect.y = vo;
-  LabelVector.push_back(PaLabel); //0 - index
+  LabelVector.push_back(PaLabel);  //0 - index
   PaLabel.~Label();
 
   const char* GvsAIL = "images/gvai.png";
@@ -2164,7 +2207,7 @@ int main(int argc, char *argv[])
   Udlabel.srect.y = 0;
   Udlabel.drect.x = ScWidth / 2 - Udlabel.drect.w / 2; 
   Udlabel.drect.y = vo * 2;
-  LabelVector.push_back(Udlabel); //2 - index
+  LabelVector.push_back(Udlabel);  //2 - index
   Udlabel.~Label();
 
   const char* sgL = "images/sg.png";
@@ -2172,7 +2215,7 @@ int main(int argc, char *argv[])
   SgLabel.srect.y = 0;
   SgLabel.drect.x = ScWidth / 2 - SgLabel.drect.w / 2; 
   SgLabel.drect.y = vo;
-  LabelVector.push_back(SgLabel); //3 - index
+  LabelVector.push_back(SgLabel);  //3 - index
   SgLabel.~Label();
 
   const char* colorsL = "images/colors.png";
@@ -2180,7 +2223,7 @@ int main(int argc, char *argv[])
   ColorsLabel.srect.y = 0;
   ColorsLabel.drect.x = ScWidth / 2 - ColorsLabel.drect.w / 2; 
   ColorsLabel.drect.y = vo * 2;
-  LabelVector.push_back(ColorsLabel); //4 - index
+  LabelVector.push_back(ColorsLabel);  //4 - index
   ColorsLabel.~Label();
 
   const char* rgbL = "images/rgb.png";
@@ -2188,15 +2231,15 @@ int main(int argc, char *argv[])
   RgbLabel.srect.y = 0;
   RgbLabel.drect.x = ScWidth / 2 - RgbLabel.drect.w / 2; 
   RgbLabel.drect.y = vo * 3;
-  LabelVector.push_back(RgbLabel); //5 - index
-  RgbLabel.~Label();
+  LabelVector.push_back(RgbLabel);  //5 - index
+  RgbLabel.~Label(); 
 
   const char* sgsL = "images/sgs.png";
   Label SgsLabel(sgsL, ho * 1.5, vo, 100, 600);
   SgsLabel.srect.y = 0;
   SgsLabel.drect.x = ScWidth / 2 - SgsLabel.drect.w / 2; 
   SgsLabel.drect.y = 0; 
-  LabelVector.push_back(SgsLabel); //6 - index
+  LabelVector.push_back(SgsLabel);  //6 - index
   SgsLabel.~Label();
 
   const char* useL = "images/use.png";
@@ -2204,7 +2247,7 @@ int main(int argc, char *argv[])
   UseLabel.srect.y = 0;
   UseLabel.drect.x = ScWidth / 2 - UseLabel.drect.w / 2; 
   UseLabel.drect.y = vo;
-  LabelVector.push_back(UseLabel); //7 - index
+  LabelVector.push_back(UseLabel);  //7 - index
   UseLabel.~Label();
 
   const char* sgrL = "images/sgr.png";
@@ -2212,7 +2255,7 @@ int main(int argc, char *argv[])
   SgrLabel.srect.y = 0;
   SgrLabel.drect.x = ScWidth / 2 - SgrLabel.drect.w / 2; 
   SgrLabel.drect.y = 0;
-  LabelVector.push_back(SgrLabel); //8 - index
+  LabelVector.push_back(SgrLabel);  //8 - index
   SgrLabel.~Label();
 
   const char* mdaL = "images/mda.png";
@@ -2220,7 +2263,7 @@ int main(int argc, char *argv[])
   MaxdotamountLabel.srect.y = 0;
   MaxdotamountLabel.drect.x = ScWidth * 4 / 9 - MaxdotamountLabel.drect.w / 2; 
   MaxdotamountLabel.drect.y = vo * 4;
-  LabelVector.push_back(MaxdotamountLabel); //9 - index
+  LabelVector.push_back(MaxdotamountLabel);  //9 - index
   MaxdotamountLabel.~Label();
 
   const char* medL = "images/med.png";
@@ -2228,7 +2271,7 @@ int main(int argc, char *argv[])
   MaxeatendotsLabel.srect.y = 0;
   MaxeatendotsLabel.drect.x = ScWidth * 4 / 9 - MaxeatendotsLabel.drect.w / 2; 
   MaxeatendotsLabel.drect.y = vo * 5;
-  LabelVector.push_back(MaxeatendotsLabel); //10 - index
+  LabelVector.push_back(MaxeatendotsLabel);  //10 - index
   MaxeatendotsLabel.~Label();
 
   ColorButton P21(25, 170, 100);
@@ -2323,6 +2366,7 @@ int main(int argc, char *argv[])
         GameItself();  
     }
   }
+
 //////////////////////////Exiting program///////////////////////////////////////
   TTF_CloseFont(my_Font);
   TTF_Quit();
