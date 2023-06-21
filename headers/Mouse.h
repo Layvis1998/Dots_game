@@ -6,6 +6,7 @@ using namespace std;
 
 const char mouse_name[] = "images/mouse.png";
 const char mouse_circle_name[] = "images/transparent_mouse.png";
+const int MOUSE_OPACITY = 182;
 
 class Mouse
 {
@@ -25,7 +26,7 @@ public:
 
     point.w = 1;
     point.h = 1;
-    circle_size = 7;
+    circle_size = 10;
   }
 
   void GiveColor(SDL_Color color)
@@ -33,7 +34,7 @@ public:
     clr.r = color.r;
     clr.g = color.g;
     clr.b = color.b;
-    clr.a = 255;
+    clr.a = MOUSE_OPACITY;
   }
 
   void Update()
@@ -50,9 +51,9 @@ public:
     SDL_RenderCopy(renderer, tex, NULL, &rect);
   }
 
-  void DrawCircle(SDL_Color scolor)
+  void DrawDot(SDL_Color scolor)
   {
-    SDL_SetRenderDrawColor(renderer, clr.r, clr.g, clr.b, clr.a);
+    SDL_SetRenderDrawColor(renderer, clr.r, clr.g, clr.b, MOUSE_OPACITY);
     for (int w = 0; w < circle_size * 2; w++)
     {
       for (int h = 0; h < circle_size * 2; h++)
@@ -69,10 +70,18 @@ public:
     SDL_RenderDrawPoint(renderer, point.x, point.y + 1);
     SDL_RenderDrawPoint(renderer, point.x, point.y - 1);
     SDL_RenderDrawPoint(renderer, point.x - 1, point.y);
+    SDL_RenderDrawPoint(renderer, point.x + 1, point.y + 1);
+    SDL_RenderDrawPoint(renderer, point.x - 1, point.y + 1);
+    SDL_RenderDrawPoint(renderer, point.x - 1, point.y - 1);
+    SDL_RenderDrawPoint(renderer, point.x + 1, point.y - 1);
     SDL_RenderDrawPoint(renderer, point.x + 2, point.y);
     SDL_RenderDrawPoint(renderer, point.x, point.y + 2);
     SDL_RenderDrawPoint(renderer, point.x, point.y - 2);
     SDL_RenderDrawPoint(renderer, point.x - 2, point.y);
+    SDL_RenderDrawPoint(renderer, point.x + 3, point.y);
+    SDL_RenderDrawPoint(renderer, point.x, point.y + 3);
+    SDL_RenderDrawPoint(renderer, point.x, point.y - 3);
+    SDL_RenderDrawPoint(renderer, point.x - 3, point.y);
 
     clr = scolor;
     SDL_ShowCursor(false);
@@ -82,7 +91,7 @@ public:
   {      
     const SDL_Rect aux_rect = rect; //This is only done for the RenderFillRect funtion to work
 
-    SDL_SetRenderDrawColor(renderer, clr.r, clr.g, clr.b, clr.a);
+    SDL_SetRenderDrawColor(renderer, clr.r, clr.g, clr.b, MOUSE_OPACITY);
     SDL_RenderFillRect(renderer, &aux_rect);
     SDL_RenderDrawRect(renderer, &rect);
   }

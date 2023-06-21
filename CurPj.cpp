@@ -6,13 +6,15 @@
 #include <unordered_set>
 #include <stack>
 #include <algorithm>
+#include <list>
 #include <SDL2/SDL.h>
-
 #include <SDL2/SDL_image.h>
 #include <SDL2/SDL_ttf.h>
+
 #include "headers/Button.h"
 #include "headers/Label.h"
 #include "headers/ColorButton.h"
+#include "headers/OverloadedFunctions.h"
 
 #if __linux__
   #include <X11/Xlib.h>
@@ -24,9 +26,8 @@ if _WIN32
 #endif     
 */
 
-class Dots
+struct Dots
 {
-public:
   bool exist;
   SDL_Color clr;
   bool visited;
@@ -34,26 +35,34 @@ public:
   bool cycle;
 };
 
+struct ColorSpace
+{
+  unordered_set <int> Cycle;
+  unordered_set <int> InnerDots;  
+};
+
 //global constants
-int intrv = 20; // interval
-const int move_game_speed = 14;
+const uint8_t move_game_speed = 14;
+const uint16_t maxintrv = 100;
+const uint16_t minintrv = 10; 
 const uint8_t red_default = 5;
 const uint8_t green_default = 35;
 const uint8_t blue_default = 90;
 const uint8_t text_red_default = 50;
 const uint8_t text_green_default = 70;
 const uint8_t text_blue_default = 230;
-const int field_x_base = 150;
-const int field_y_base = 240;
-const int dots_menu_size = field_x_base * field_y_base;
-const int field_x_credits = 50;
-const int field_y_credits = 100;
-const int dots_credits_size = field_y_credits * field_x_credits;
-const int DOT_OPACITY = 230;
-const int LINE_OPACITY = 220;
-const int BACKGROUND_OPACITY = 210;
+const uint16_t field_x_base = 150;
+const uint16_t field_y_base = 240;
+const uint16_t dots_menu_size = field_x_base * field_y_base;
+const uint8_t field_x_credits = 50;
+const uint8_t field_y_credits = 100;
+const uint16_t dots_credits_size = field_y_credits * field_x_credits;
+const uint8_t DOT_OPACITY = 210;
+const uint8_t LINE_OPACITY = 220;
+const uint8_t BACKGROUND_OPACITY = 210;
 
 //gloabal variables
+int8_t intrv = 20; // interval
 int vo;  //vertical offset
 int ho;  //horizontal offset
 int X_offset;
@@ -71,8 +80,6 @@ int dot_size;
 char* field_x;
 char* field_y;  
 
-
-float Scale = 1.0;
 int ScWidth;
 int ScHeight;
 int field_x_size = field_x_base;
@@ -80,8 +87,8 @@ int field_y_size = field_y_base;
 int game_x_size = 30;
 int game_y_size = 30;
 
-int rectangle_w;
-int rectangle_h;
+uint16_t rectangle_w;
+uint16_t rectangle_h;
 
 TTF_Font* my_Font; 
 Mouse mouse;
@@ -100,32 +107,6 @@ uint8_t background_blue = blue_default;
 enum GameStateType {Menu, Credits, SAP, ONEPM, TWOPM,
                     THREEPM, FOURPM, GSM, GRM, Game};
 GameStateType GameState;
-
-bool operator==(SDL_Color a, SDL_Color b)
-{
-  if ( (a.r == b.r) && (a.g == b.g) && (a.b == b.b) && (a.a == b.a) ) 
-    return true;
-  else
-    return false;
-}
-
-bool operator!=(SDL_Color a, SDL_Color b)
-{
-  if ( (a.r == b.r) && (a.g == b.g) && (a.b == b.b) && (a.a == b.a) ) 
-    return false;
-  else
-    return true;
-}
-
-unordered_set<int> &operator-=(unordered_set<int> &a, unordered_set<int> &b)
-{
-  for (auto i = b.begin(); i != b.end(); i++ )
-  {
-    if (a.count(*i) )
-      a.erase(*i);
-  }
-  return a;
-}
 
 void FindConnectedDots (Dots* dots, int current, unordered_set <int> &uset,
   int fx, int fy)
@@ -509,8 +490,9 @@ int Min (unordered_set <int> uset)
   return min;
 }
 
-void ProcessDotInteraction (Dots* dots, int fx, int fy)
+list <ColorSpace> ProcessDotInteraction (Dots* dots, int fx, int fy)
 {
+  list <ColorSpace> result;
   int current = 0;
   for (int i = 0; i < fx * fy; i++)
   {
@@ -526,7 +508,7 @@ void ProcessDotInteraction (Dots* dots, int fx, int fy)
       current++;
     
     if (current == fx * fy)
-      return;
+      return result;
   
     unordered_set <int> ConnectedCycles;
     FindConnectedDots(dots, current, ConnectedCycles, fx, fy);
@@ -550,6 +532,7 @@ void ProcessDotInteraction (Dots* dots, int fx, int fy)
       DeleteBranchesE(dots, start, ConnectedCycles, fx, fy);
     }
   }
+  return result;
 }
 
 void MoveBoard(int fx, int fy , int speed)
@@ -558,13 +541,13 @@ void MoveBoard(int fx, int fy , int speed)
   int CurScHeight;
   SDL_GetWindowSize(window, &CurScWidth, &CurScHeight);
 
-  if (xMouse <= intrv / 2)
+  if (xMouse <= minintrv / 2.0)
     X_offset -= speed;
-  if (xMouse >= CurScWidth - intrv / 2)
+  if (xMouse >= CurScWidth - minintrv / 2.0)
     X_offset += speed;
-  if (yMouse <= intrv / 2)
+  if (yMouse <= minintrv / 2.0)
     Y_offset -= speed; 
-  if (yMouse >= CurScHeight - intrv / 2)
+  if (yMouse >= CurScHeight - minintrv / 2.0)
     Y_offset += speed;
 
   if (event.key.keysym.sym == SDLK_s)
@@ -595,7 +578,7 @@ void MoveBoard(int fx, int fy , int speed)
     Y_offset = 0;
 }
 
-void DrawCircle(SDL_Renderer *renderer, int x, int y, int radius, 
+void DrawDot(SDL_Renderer *renderer, int x, int y, int radius, 
   SDL_Color clr)
 {
   SDL_SetRenderDrawColor(renderer, clr.r, clr.g, clr.b, DOT_OPACITY);
@@ -859,9 +842,9 @@ void FieldColor()
         background_red = 255;
         background_green = 255;
         background_blue = 255;
-        TextColor.r = text_red_default;
-        TextColor.g = text_green_default;
-        TextColor.b = text_blue_default;
+        TextColor.r = red_default;
+        TextColor.g = green_default;
+        TextColor.b = blue_default;
       }
     }
   }
@@ -872,8 +855,8 @@ void DrawDots(Dots* dots, int size, int fx)
   for (int i = 0; i < size; i++)
   { 
     if (dots[i].exist == true) 
-      DrawCircle(renderer, (i % fx + 2) * intrv - X_offset,
-        (i / fx + 2) * intrv - Y_offset, dot_size, dots[i].clr);  
+      DrawDot(renderer, (i % fx + 2) * intrv - X_offset - 1,
+        (i / fx + 2) * intrv - Y_offset - 1, dot_size, dots[i].clr);  
   }
 }
 
@@ -895,29 +878,33 @@ void Zoom()
 {
   if (event.type == SDL_MOUSEWHEEL)
   {
-    if ((event.wheel.y > 0) && (intrv < 80)) // Zoom in
+    if ((event.wheel.y > 0) && (intrv <= maxintrv)) // Zoom in
     {
       intrv++;
       X_offset = X_offset * double(intrv) / (intrv - 1) + 
-        (ScWidth * (double(intrv) / (intrv - 1) - 1 )) / 2;
+        (2 * xMouse * (double(intrv) / (intrv - 1) - 1 )) / 2;
       
       Y_offset = Y_offset * double(intrv) / (intrv - 1) + 
-        (ScHeight * (double(intrv) / (intrv - 1) -  1)) / 2 ;
+        (2 * yMouse * (double(intrv) / (intrv - 1) -  1)) / 2 ;
     }
-    else if ((event.wheel.y < 0) && (intrv >= 15)) // Zoom out
+    else if ((event.wheel.y < 0) && (intrv >= minintrv)) // Zoom out
     {  
       intrv--;
       X_offset = X_offset * double(intrv) / (intrv + 1) + 
-        (ScWidth * (double(intrv) / (intrv + 1) - 1 )) / 2;
+        (2 * xMouse * (double(intrv) / (intrv + 1) - 1 )) / 2;
       
       Y_offset = Y_offset * double(intrv) / (intrv + 1) + 
-        (ScHeight * (double(intrv) / (intrv + 1) -  1)) / 2 ;
+        (2 * yMouse * (double(intrv) / (intrv + 1) -  1)) / 2 ;
     }
+    
+    if (intrv <= minintrv + (maxintrv - minintrv) / 3.0)
+      dot_size = round(intrv * 20 / 52.0);
+    if (intrv <= minintrv + (maxintrv - minintrv) * 2 / 3.0)
+      dot_size = round(intrv * 20 / 59.0);
+    else
+      dot_size = round(intrv * 20 / 67.0);
 
-    dot_size = intrv * 20 / 71.0;
-    if (intrv <= 24)
-      dot_size = 7;
-    mouse.circle_size = dot_size + 1;
+    mouse.circle_size = dot_size + 2;
   }
 }
 
@@ -936,7 +923,6 @@ bool GetDotInput(Dots *dots, SDL_Color clr, int fxs, int fys)
      && (xMouse + X_offset <= (fxs + 5 / 3.0) * intrv)
      && (yMouse + Y_offset <= (fys + 5 / 3.0) * intrv))
   {  
-
     int coeff = round((xMouse + X_offset) / float(intrv)) - 2 +
       + (round((yMouse + Y_offset) / float(intrv)) - 2) * fxs;
       
@@ -1031,6 +1017,7 @@ void MainMenu()
       GameState = Credits;
 
     SDL_GetMouseState(&xMouse,&yMouse);
+    Zoom();
     GetDotInput(dots, cur_color, field_x_base, field_y_base);
     GetDotErase(dots, field_x_base, field_y_base);
     SDL_SetRenderDrawColor(renderer, red_default, green_default,
@@ -1041,15 +1028,15 @@ void MainMenu()
     DrawDots(dots, dots_menu_size, field_x_size);
     EnumerateField(field_y_base, field_x_base, my_Font);
     ProcessDotInteraction(dots, field_x_base, field_y_base);
-    
+
     ButtonVector[0].Draw();
     ButtonVector[1].Draw();
     ButtonVector[2].Draw();
     ButtonVector[3].Draw();
     ButtonVector[4].Draw();
-    mouse.DrawCircle(cur_color);
+    mouse.DrawDot(cur_color);
 
-    Zoom();
+;
     SDL_RenderPresent(renderer);
   }
 }
@@ -1083,8 +1070,8 @@ void CreditsMenu()
     if ( (event.key.keysym.sym == SDLK_b) && (event.type == SDL_KEYUP) )
       GameState = Menu;
 
-    Zoom();
     SDL_GetMouseState(&xMouse, &yMouse);
+    Zoom();
     GetDotInput(dots_c, cur_color, field_x_credits, field_y_credits);
     GetDotErase(dots_c, field_x_credits, field_y_credits);
     SDL_SetRenderDrawColor(renderer, red_default, green_default,
@@ -1098,7 +1085,7 @@ void CreditsMenu()
     ProcessDotInteraction(dots_c, field_x_credits, field_y_credits);
 
     ButtonVector[9].Draw();
-    mouse.DrawCircle(cur_color);
+    mouse.DrawDot(cur_color);
     
     SDL_RenderPresent(renderer);
   }
@@ -1183,8 +1170,8 @@ void SelectAmountOfPlayersMenu()
     if( (event.key.keysym.sym == SDLK_4) && (event.type == SDL_KEYDOWN) )
       ButtonVector[8].keytrick = true;
 
-    Zoom();
     SDL_GetMouseState(&xMouse,&yMouse);
+    Zoom();
     GetDotInput(dots, cur_color, field_x_base, field_y_base);
     GetDotErase(dots, field_x_base, field_y_base);
     SDL_SetRenderDrawColor(renderer, red_default, green_default, 
@@ -1202,7 +1189,7 @@ void SelectAmountOfPlayersMenu()
     ButtonVector[7].Draw();
     ButtonVector[8].Draw();
     ButtonVector[9].Draw();
-    mouse.DrawCircle(cur_color);
+    mouse.DrawDot(cur_color);
     
     SDL_RenderPresent(renderer);
   }
@@ -1241,7 +1228,6 @@ void OnePlayerMenu()
       GameState = SAP;
     
     SDL_GetMouseState(&xMouse,&yMouse);
-
     Zoom();
     MoveBoard(field_x_base, field_y_base, move_game_speed);
     SDL_SetRenderDrawColor(renderer, background_red, background_green,
@@ -1257,7 +1243,7 @@ void OnePlayerMenu()
     LabelVector[1].Draw();
     LabelVector[2].Draw();
     ButtonVector[10].Draw();
-    mouse.DrawCircle(cur_color);
+    mouse.DrawDot(cur_color);
     
     SDL_RenderPresent(renderer);
   }
@@ -1265,6 +1251,7 @@ void OnePlayerMenu()
 
 void TwoPlayerMenu()
 {
+  list <ColorSpace> Space;
   ButtonVector[10].keytrick = false;
   ButtonVector[12].keytrick = false;
   for (int i = 0; i < dots_menu_size; i++)
@@ -1331,8 +1318,8 @@ void TwoPlayerMenu()
       cur_color = ClrButtonVector[1].clr;
     }
 
-    Zoom();
     SDL_GetMouseState(&xMouse,&yMouse);
+    Zoom();
     MoveBoard(field_x_base, field_y_base, move_game_speed);
     SDL_SetRenderDrawColor(renderer, background_red, background_green,
       background_blue, BACKGROUND_OPACITY);
@@ -1343,17 +1330,16 @@ void TwoPlayerMenu()
     GetDotInput(dots, cur_color, field_x_base, field_y_base);
     GetDotErase(dots, field_x_base, field_y_base);
     DrawDots(dots, dots_menu_size, field_x_size);
-    ProcessDotInteraction(dots, field_x_base, field_y_base);
+    Space = ProcessDotInteraction(dots, field_x_base, field_y_base);
 
     ClrButtonVector[0].Draw();
     ClrButtonVector[1].Draw();
-
     LabelVector[3].Draw();
     LabelVector[4].Draw();
     LabelVector[5].Draw();
     ButtonVector[10].Draw();
     ButtonVector[12].Draw();
-    mouse.DrawCircle(cur_color);
+    mouse.DrawDot(cur_color);
     
     SDL_RenderPresent(renderer);
   }
@@ -1435,8 +1421,8 @@ void ThreePlayerMenu()
       cur_color = ClrButtonVector[4].clr;
     }
 
-    Zoom();
     SDL_GetMouseState(&xMouse,&yMouse);
+    Zoom();
     MoveBoard(field_x_base, field_y_base, move_game_speed);
     SDL_SetRenderDrawColor(renderer, background_red, background_green,
       background_blue, BACKGROUND_OPACITY);
@@ -1456,7 +1442,7 @@ void ThreePlayerMenu()
     LabelVector[5].Draw();
     ButtonVector[10].Draw();
     ButtonVector[12].Draw();
-    mouse.DrawCircle(cur_color);
+    mouse.DrawDot(cur_color);
     
     SDL_RenderPresent(renderer);
   }
@@ -1545,8 +1531,8 @@ void FourPlayerMenu()
       cur_color = ClrButtonVector[8].clr;
     }
 
-    Zoom();
     SDL_GetMouseState(&xMouse,&yMouse);
+    Zoom();
     MoveBoard(field_x_base, field_y_base, move_game_speed);
     SDL_SetRenderDrawColor(renderer, background_red, background_green,
       background_blue, BACKGROUND_OPACITY);
@@ -1567,7 +1553,7 @@ void FourPlayerMenu()
     ClrButtonVector[6].Draw();
     ClrButtonVector[7].Draw();
     ClrButtonVector[8].Draw();
-    mouse.DrawCircle(cur_color);
+    mouse.DrawDot(cur_color);
     
     SDL_RenderPresent(renderer);
   }
@@ -1763,8 +1749,8 @@ void GameSizeMenu()
     else
       rectangle2.w = rectangle_w * 2;
 
-    Zoom();
     SDL_GetMouseState(&xMouse,&yMouse);
+    Zoom();
     SDL_SetRenderDrawColor(renderer, background_red, background_green,
       background_blue, BACKGROUND_OPACITY);
     SDL_RenderClear(renderer);
@@ -1789,7 +1775,7 @@ void GameSizeMenu()
     ButtonVector[12].Draw();
     LabelVector[6].Draw();
     LabelVector[7].Draw();
-    mouse.DrawCircle(cur_color);
+    mouse.DrawDot(cur_color);
 
     SDL_RenderPresent(renderer);
   }
@@ -1962,8 +1948,8 @@ void GameRuleMenu()
     else
       rectangle5.w = rectangle_w * 2;
 
-    Zoom();
     SDL_GetMouseState(&xMouse,&yMouse);
+    Zoom();
     SDL_SetRenderDrawColor(renderer, background_red, background_green,
       background_blue, SDL_ALPHA_OPAQUE);
     SDL_RenderClear(renderer);
@@ -1988,7 +1974,7 @@ void GameRuleMenu()
     LabelVector[8].Draw();
     LabelVector[9].Draw();
     LabelVector[10].Draw();
-    mouse.DrawCircle(cur_color);
+    mouse.DrawDot(cur_color);
 
     SDL_RenderPresent(renderer);
   }
@@ -2076,7 +2062,7 @@ void GameItself()
     EnumerateField(game_y_size, game_x_size, my_Font);
     ProcessDotInteraction(dots_g, game_x_size, game_y_size);
 
-    mouse.DrawCircle(cur_color);
+    mouse.DrawDot(cur_color);
 
     SDL_RenderPresent(renderer);    
   }
@@ -2086,6 +2072,14 @@ void GameItself()
 
 int main(int argc, char *argv[])
 {
+  unordered_set <int> a = {1, 2, 3};
+  unordered_set <int> b = {1, 2, 3, 4};
+  unordered_set <int> c = {1, 2, 3, 4, 5};
+  unordered_set <int> d = {1, 2, 3, 4, 5};
+
+  cout << (a != b) << endl;
+  cout << (a != a) << endl;
+  cout << (c != d) << endl;
 
 ///////////////////////////////Finding out display parameters///////////////////
   #if __linux__
