@@ -28,11 +28,12 @@ if _WIN32
 
 struct Dots
 {
-  bool exist;
   SDL_Color clr;
+  bool exist;
   bool visited;
   bool deadend;
   bool cycle;
+  bool space;
 };
 
 struct ColorSpace
@@ -42,50 +43,47 @@ struct ColorSpace
 };
 
 //global constants
+const uint16_t default_minintrv = 10;
 const uint8_t move_game_speed = 14;
-const uint16_t maxintrv = 100;
-const uint16_t minintrv = 10; 
 const uint8_t red_default = 5;
 const uint8_t green_default = 35;
 const uint8_t blue_default = 90;
 const uint8_t text_red_default = 50;
 const uint8_t text_green_default = 70;
 const uint8_t text_blue_default = 230;
-const uint16_t field_x_base = 150;
-const uint16_t field_y_base = 240;
-const uint16_t dots_menu_size = field_x_base * field_y_base;
-const uint8_t field_x_credits = 50;
-const uint8_t field_y_credits = 100;
-const uint16_t dots_credits_size = field_y_credits * field_x_credits;
+const uint16_t menu_x_field = 200;
+const uint16_t menu_y_field = 240;
+const uint16_t credits_x_field = 50;
+const uint16_t credits_y_field = 400;
 const uint8_t DOT_OPACITY = 210;
 const uint8_t LINE_OPACITY = 220;
-const uint8_t BACKGROUND_OPACITY = 210;
+const uint8_t BACKGROUND_OPACITY = 20;
 
 //gloabal variables
-int8_t intrv = 20; // interval
+uint16_t intrv = 20; // interval
+uint16_t maxintrv = 100;
+uint16_t minintrv = default_minintrv; 
 int vo;  //vertical offset
 int ho;  //horizontal offset
-int X_offset;
-int Y_offset;
+int X_offset = 0;
+int Y_offset = 0;
 int maxdotamount = 0;
 int maxeatendots = 0;
 bool classic = true;
 vector <Button> ButtonVector;
 vector <Label> LabelVector;
 vector <ColorButton> ClrButtonVector;
-Dots dots[dots_menu_size];
-Dots dots_c[dots_credits_size];
-Dots* dots_g;
-int dot_size;
+Dots dots[menu_x_field * menu_y_field];
+Dots dots_credits[credits_y_field * credits_x_field];
+Dots* dots_game;
+int dot_size = 8;
 char* field_x;
 char* field_y;  
 
 int ScWidth;
 int ScHeight;
-int field_x_size = field_x_base;
-int field_y_size = field_y_base;
-int game_x_size = 30;
-int game_y_size = 30;
+int game_x_field = 30;
+int game_y_field = 30;
 
 uint16_t rectangle_w;
 uint16_t rectangle_h;
@@ -95,7 +93,7 @@ Mouse mouse;
 int xMouse = 0;
 int yMouse = 0;
 
-uint8_t pa_back = 1;
+uint8_t pa_back = 2;
 SDL_Color white = {255, 255, 255, DOT_OPACITY};
 SDL_Color TextColor = 
   {text_red_default, text_green_default, text_blue_default, 240};
@@ -253,7 +251,7 @@ int DifferentWays( Dots* dots, int current, int fx , int fy)
 }
 
 void DeleteBranches
- (Dots* dots, int current, unordered_set <int> &uset, int fx, int fy)
+  (Dots* dots, int current, unordered_set <int> &uset, int fx, int fy)
 {
   bool branchdeleted = true;
 
@@ -478,7 +476,6 @@ void FillCycle(unordered_set <int> CycleSet, Dots* dots, int fx)
   }
 }
 
-
 int Min (unordered_set <int> uset)
 {
   int min = INT_MAX;
@@ -513,7 +510,7 @@ list <ColorSpace> ProcessDotInteraction (Dots* dots, int fx, int fy)
     unordered_set <int> ConnectedCycles;
     FindConnectedDots(dots, current, ConnectedCycles, fx, fy);
     DeleteBranches(dots, current, ConnectedCycles, fx, fy);
-    cout << "Connected cycles size = "  << ConnectedCycles.size()  << endl;
+    //cout << "Connected cycles size = "  << ConnectedCycles.size()  << endl;
 
     while ((ConnectedCycles.size() != 0))
     { 
@@ -524,8 +521,8 @@ list <ColorSpace> ProcessDotInteraction (Dots* dots, int fx, int fy)
       int start = Min(ConnectedCycles);
       ExtractCycle(dots, start, Cycle, fx, fy);
       DeleteBranchesE(dots, start, Cycle, fx, fy);
-      cout << "Extracted cycle size = "  << Cycle.size() << endl;
-      cout << "Fill cycle : " << CheckForColor(Cycle, dots, fx) << endl;
+      //cout << "Extracted cycle size = "  << Cycle.size() << endl;
+      //cout << "Fill cycle : " << CheckForColor(Cycle, dots, fx) << endl;
       if (CheckForColor(Cycle, dots, fx))
         FillCycle(Cycle, dots, fx);
       ConnectedCycles -= Cycle;
@@ -620,6 +617,7 @@ void DrawField(int dot_rows, int dot_clmns)
 
 void FillCredits(TTF_Font *my_Font)
 {
+  SDL_Color CreditsColor = {205, 80, 205, SDL_ALPHA_OPAQUE};
   SDL_Surface* surfaceText;
   SDL_Texture* textureText;
   SDL_Rect rectangle;
@@ -628,7 +626,7 @@ void FillCredits(TTF_Font *my_Font)
       
   const char *tex = "This game was written by 25-year old Karandeev"
                     " Ilia at summer 2023 during his stay in \0";
-  surfaceText = TTF_RenderText_Solid(my_Font, tex, {0, 200, 200});
+  surfaceText = TTF_RenderText_Solid(my_Font, tex, CreditsColor);
   textureText = SDL_CreateTextureFromSurface(renderer, surfaceText);
   rectangle.x = intrv * 3 - X_offset;
   rectangle.y = intrv * 5 - Y_offset;
@@ -638,7 +636,7 @@ void FillCredits(TTF_Font *my_Font)
 
   const char *tex2 = "Armenia. It was inspired by his school days of"
                      " playing the Dots game back in Russia. He\0";
-  surfaceText = TTF_RenderText_Solid(my_Font, tex2, {0, 200, 200});
+  surfaceText = TTF_RenderText_Solid(my_Font, tex2, CreditsColor);
   textureText = SDL_CreateTextureFromSurface(renderer, surfaceText);
   rectangle.x = intrv * 3 - X_offset;
   rectangle.y = intrv * 8 - Y_offset;
@@ -648,7 +646,7 @@ void FillCredits(TTF_Font *my_Font)
 
   const char *tex3 = "spent a really huge amount of time playing this"
                      " game with his friends during some of\0";
-  surfaceText = TTF_RenderText_Solid(my_Font, tex3, {0, 200, 200});
+  surfaceText = TTF_RenderText_Solid(my_Font, tex3, CreditsColor);
   textureText = SDL_CreateTextureFromSurface(renderer, surfaceText);
   rectangle.x = intrv * 3 - X_offset;
   rectangle.y = intrv * 11 - Y_offset;
@@ -658,7 +656,7 @@ void FillCredits(TTF_Font *my_Font)
 
   const char *tex4 = "the boring lessons. After some years including his"
                     " study in the CMC MSU faculty he \0";
-  surfaceText = TTF_RenderText_Solid(my_Font, tex4, {0, 200, 200});
+  surfaceText = TTF_RenderText_Solid(my_Font, tex4, CreditsColor);
   textureText = SDL_CreateTextureFromSurface(renderer, surfaceText);
   rectangle.x = intrv * 3 - X_offset;
   rectangle.y = intrv * 14 - Y_offset;
@@ -668,7 +666,7 @@ void FillCredits(TTF_Font *my_Font)
 
   const char *tex5 = "finally had the skill to implement it as a computer"
                      " games. Special thanks to his former\0";
-  surfaceText = TTF_RenderText_Solid(my_Font, tex5, {0, 200, 200});
+  surfaceText = TTF_RenderText_Solid(my_Font, tex5, CreditsColor);
   textureText = SDL_CreateTextureFromSurface(renderer, surfaceText);
   rectangle.x = intrv * 3 - X_offset;
   rectangle.y = intrv * 17 - Y_offset;
@@ -678,7 +676,7 @@ void FillCredits(TTF_Font *my_Font)
 
   const char *tex6 = "fellow CMC group member Daniel Oblomov, who helped him"
                      " during his hard days of living \0";
-  surfaceText = TTF_RenderText_Solid(my_Font, tex6, {0, 200, 200});
+  surfaceText = TTF_RenderText_Solid(my_Font, tex6, CreditsColor);
   textureText = SDL_CreateTextureFromSurface(renderer, surfaceText);
   rectangle.x = intrv * 3 - X_offset;
   rectangle.y = intrv * 20 - Y_offset;
@@ -688,7 +686,7 @@ void FillCredits(TTF_Font *my_Font)
 
   const char *tex7 = "in Armenia. That's it. Hope you enjoy/will enjoy/enjoyed"
                      " playing this wonderfull game. \0";
-  surfaceText = TTF_RenderText_Solid(my_Font, tex7, {0, 200, 200});
+  surfaceText = TTF_RenderText_Solid(my_Font, tex7, CreditsColor);
   textureText = SDL_CreateTextureFromSurface(renderer, surfaceText);
   rectangle.x = intrv * 3 - X_offset;
   rectangle.y = intrv * 23 - Y_offset;
@@ -698,7 +696,7 @@ void FillCredits(TTF_Font *my_Font)
 
   const char *tex8 = "                                   "
                      "             Respectfully yours, Karandeev Ilia       \0";
-  surfaceText = TTF_RenderText_Solid(my_Font, tex8, {0, 200, 200});
+  surfaceText = TTF_RenderText_Solid(my_Font, tex8, CreditsColor);
   textureText = SDL_CreateTextureFromSurface(renderer, surfaceText);
   rectangle.x = intrv * 3 - X_offset;
   rectangle.y = intrv * 26 - Y_offset;
@@ -897,13 +895,7 @@ void Zoom()
         (2 * yMouse * (double(intrv) / (intrv + 1) -  1)) / 2 ;
     }
     
-    if (intrv <= minintrv + (maxintrv - minintrv) / 3.0)
-      dot_size = round(intrv * 20 / 52.0);
-    if (intrv <= minintrv + (maxintrv - minintrv) * 2 / 3.0)
-      dot_size = round(intrv * 20 / 59.0);
-    else
-      dot_size = round(intrv * 20 / 67.0);
-
+    dot_size = round(intrv * 20 / 64.0);
     mouse.circle_size = dot_size + 2;
   }
 }
@@ -953,25 +945,95 @@ void GetDotErase(Dots *dots, int fxs, int fys)
   {  
     int coeff = round((xMouse + X_offset) / float(intrv)) - 2 +
       + (round((yMouse + Y_offset) / float(intrv)) - 2) * fxs;
-      
-    dots[coeff].exist = false;      
+    
+    if (dots[coeff].space == false) 
+      dots[coeff].exist = false;      
+  }
+}
+
+void CheckLineNumber(int fxs, int fys)
+{
+  if ( (  (((yMouse + Y_offset) % intrv) <= intrv / 3.0)
+    || (((yMouse + Y_offset) % intrv) >= intrv * 2 / 3.0)) 
+    && 
+      (((xMouse + X_offset) % intrv) <= intrv / 3.0)
+    || (((xMouse + X_offset) % intrv) >= intrv * 2 / 3.0)
+    && 
+      (xMouse + X_offset >= 5 / 3.0 * intrv)
+    && (yMouse + Y_offset >= 5 / 3.0 * intrv)
+    && (xMouse + X_offset <= (fxs + 5 / 3.0) * intrv)
+    && (yMouse + Y_offset <= (fys + 5 / 3.0) * intrv))
+  {  
+    SDL_Surface* surfaceText;
+    SDL_Texture* textureText;
+    SDL_Rect rectangleE;
+
+    rectangleE.h = max (uint16_t(intrv / 2.0), uint16_t(35));
+    rectangleE.w = rectangleE.h * 4;
+
+    string line_num = 
+        "line" + to_string(int(round((yMouse + Y_offset) / float(intrv)) - 2))
+      + ", clmn" + to_string(int(round((xMouse + X_offset) / float(intrv)) - 2));
+
+    char* num = (char*) line_num.c_str();
+    surfaceText = TTF_RenderText_Solid(my_Font, num, TextColor);
+    textureText = SDL_CreateTextureFromSurface(renderer, surfaceText);
+    rectangleE.x = xMouse + mouse.circle_size;
+    rectangleE.y = yMouse;
+  
+    SDL_RenderCopy(renderer, textureText, NULL, &rectangleE);
+    SDL_DestroyTexture(textureText);
+    SDL_FreeSurface(surfaceText);
+  }
+}
+
+inline void ChangeDotColor()
+{
+  switch (pa_back)
+  {
+    case 2:
+    {
+      if (cur_color == ClrButtonVector[0].clr)
+        cur_color = ClrButtonVector[1].clr;
+      else
+        cur_color = ClrButtonVector[0].clr;
+      break;
+    }
+    case 3:
+    {
+      if (cur_color == ClrButtonVector[2].clr)
+        cur_color = ClrButtonVector[3].clr;
+      else if (cur_color == ClrButtonVector[3].clr)
+        cur_color = ClrButtonVector[4].clr;
+      else
+        cur_color = ClrButtonVector[2].clr;
+      break;
+    }
+    case 4:
+    {
+      if (cur_color == ClrButtonVector[5].clr)
+        cur_color = ClrButtonVector[6].clr;
+      else if (cur_color == ClrButtonVector[6].clr)
+        cur_color = ClrButtonVector[7].clr;
+      else if (cur_color == ClrButtonVector[7].clr)
+        cur_color = ClrButtonVector[8].clr;
+      else
+        cur_color = ClrButtonVector[5].clr;
+      break;
+    }
   }
 }
 
 void MainMenu()
 {
+  X_offset = 0;
+  Y_offset = 0;
+  
   ButtonVector[0].keytrick = false;
   ButtonVector[1].keytrick = false;
   ButtonVector[2].keytrick = false;
   ButtonVector[3].keytrick = false;
   ButtonVector[4].keytrick = false;
-
-  for (int i = 0; i < dots_menu_size; i++)
-  {
-    dots[i].exist = false;
-    dots[i].visited = false;
-    dots[i].deadend = false;
-  }
   
   while (GameState == Menu)
   { 
@@ -1018,16 +1080,18 @@ void MainMenu()
 
     SDL_GetMouseState(&xMouse,&yMouse);
     Zoom();
-    GetDotInput(dots, cur_color, field_x_base, field_y_base);
-    GetDotErase(dots, field_x_base, field_y_base);
+    if (GetDotInput(dots, cur_color, menu_x_field, menu_y_field))
+      ChangeDotColor();
+    GetDotErase(dots, menu_x_field, menu_y_field);
     SDL_SetRenderDrawColor(renderer, red_default, green_default,
       blue_default, BACKGROUND_OPACITY);
     SDL_RenderClear(renderer);
-    MoveBoard(field_x_base, field_y_base, move_game_speed);
-    DrawField(field_x_base, field_y_base);
-    DrawDots(dots, dots_menu_size, field_x_size);
-    EnumerateField(field_y_base, field_x_base, my_Font);
-    ProcessDotInteraction(dots, field_x_base, field_y_base);
+    MoveBoard(menu_x_field, menu_y_field, move_game_speed);
+    DrawField(menu_x_field, menu_y_field);
+    DrawDots(dots, menu_x_field * menu_y_field, menu_x_field);
+    EnumerateField(menu_y_field, menu_x_field, my_Font);
+    CheckLineNumber(menu_x_field, menu_y_field);
+    ProcessDotInteraction(dots, menu_x_field, menu_y_field);
 
     ButtonVector[0].Draw();
     ButtonVector[1].Draw();
@@ -1036,21 +1100,29 @@ void MainMenu()
     ButtonVector[4].Draw();
     mouse.DrawDot(cur_color);
 
-;
     SDL_RenderPresent(renderer);
   }
+
 }
 
 void CreditsMenu()
 {
-  for (int i = 0; i < dots_credits_size; i++)
-    dots_c[i].exist = false;
+  X_offset = 0;
+  Y_offset = 0;
 
-  ButtonVector[9].keytrick = false;
+  ButtonVector[10].keytrick = false;
+
+  int previous_minintrv = minintrv;
+  minintrv = max(ScWidth / double(credits_x_field + 2),
+    ScHeight / double(credits_y_field + 2));
+  minintrv = max(default_minintrv, minintrv);
+  intrv = minintrv;
+  dot_size = round(intrv * 20 / 59.0);
+  mouse.circle_size = dot_size + 1;
   
   while (GameState == Credits)
   {
-    ButtonVector[9].Update(mouse);
+    ButtonVector[11].Update(mouse);
     mouse.Update();
 
     SDL_PollEvent(&event);
@@ -1060,50 +1132,52 @@ void CreditsMenu()
     if ((event.key.keysym.sym == SDLK_ESCAPE) && (event.type == SDL_KEYUP) )
       GameState = Menu;
 
-    if ((event.button.button == SDL_BUTTON_LEFT) && (ButtonVector[9].IsSelected)
+    if ((event.button.button == SDL_BUTTON_LEFT) && (ButtonVector[11].IsSelected)
       && (event.type == SDL_MOUSEBUTTONUP)) 
       GameState = Menu;
 
     if( (event.key.keysym.sym == SDLK_b) && (event.type == SDL_KEYDOWN) )
-      ButtonVector[9].keytrick = true;
+      ButtonVector[11].keytrick = true;
 
     if ( (event.key.keysym.sym == SDLK_b) && (event.type == SDL_KEYUP) )
       GameState = Menu;
 
     SDL_GetMouseState(&xMouse, &yMouse);
     Zoom();
-    GetDotInput(dots_c, cur_color, field_x_credits, field_y_credits);
-    GetDotErase(dots_c, field_x_credits, field_y_credits);
+
+    if (GetDotInput(dots_credits, cur_color, credits_x_field, credits_y_field))  
+      ChangeDotColor();
+    GetDotErase(dots_credits, credits_x_field, credits_y_field);
     SDL_SetRenderDrawColor(renderer, red_default, green_default,
       blue_default, BACKGROUND_OPACITY);
     SDL_RenderClear(renderer);
-    MoveBoard(field_x_credits, field_y_credits, move_game_speed);
-    DrawField(field_x_credits, field_y_credits);
-    DrawDots(dots_c, dots_credits_size, field_x_credits);
-    EnumerateField(field_y_credits, field_x_credits, my_Font);
+    MoveBoard(credits_x_field, credits_y_field, move_game_speed);
+    DrawField(credits_x_field, credits_y_field);
+    DrawDots(dots_credits, credits_y_field * credits_x_field, credits_x_field);
+    EnumerateField(credits_y_field, credits_x_field, my_Font);
     FillCredits(my_Font);
-    ProcessDotInteraction(dots_c, field_x_credits, field_y_credits);
+    CheckLineNumber(credits_x_field, credits_y_field);
+    ProcessDotInteraction(dots_credits, credits_x_field, credits_y_field);
 
-    ButtonVector[9].Draw();
+    ButtonVector[11].Draw();
     mouse.DrawDot(cur_color);
     
     SDL_RenderPresent(renderer);
   }
+  
+  minintrv = previous_minintrv;
 }
 
 void SelectAmountOfPlayersMenu()
 {
+  X_offset = 0;
+  Y_offset = 0;
+
   ButtonVector[5].keytrick = false;
   ButtonVector[6].keytrick = false;
   ButtonVector[7].keytrick = false;
   ButtonVector[8].keytrick = false;
   ButtonVector[9].keytrick = false;
-  for (int i = 0; i < dots_menu_size; i++)
-  {
-    dots[i].exist = false;
-    dots[i].visited = false;
-    dots[i].deadend = false;
-  }
 
   while (GameState == SAP)
   {
@@ -1113,6 +1187,7 @@ void SelectAmountOfPlayersMenu()
     ButtonVector[8].Update(mouse);
     ButtonVector[9].Update(mouse);
     mouse.Update();
+
     SDL_PollEvent(&event);
     if ((event.type == SDL_KEYDOWN) && (event.type == SDL_QUIT) )
       exit(0);
@@ -1172,16 +1247,18 @@ void SelectAmountOfPlayersMenu()
 
     SDL_GetMouseState(&xMouse,&yMouse);
     Zoom();
-    GetDotInput(dots, cur_color, field_x_base, field_y_base);
-    GetDotErase(dots, field_x_base, field_y_base);
+    if (GetDotInput(dots, cur_color, menu_x_field, menu_y_field))
+      ChangeDotColor();
+    GetDotErase(dots, menu_x_field, menu_y_field);
     SDL_SetRenderDrawColor(renderer, red_default, green_default, 
       blue_default, BACKGROUND_OPACITY);
     SDL_RenderClear(renderer);
-    MoveBoard(field_x_base, field_y_base, move_game_speed);
-    DrawField(field_x_base, field_y_base);
-    DrawDots(dots, dots_menu_size, field_x_size);
-    EnumerateField(field_y_base, field_x_base, my_Font);
-    ProcessDotInteraction(dots, field_x_base, field_y_base);
+    MoveBoard(menu_x_field, menu_y_field, move_game_speed);
+    DrawField(menu_x_field, menu_y_field);
+    DrawDots(dots, menu_x_field * menu_y_field, menu_x_field);
+    EnumerateField(menu_y_field, menu_x_field, my_Font);
+    CheckLineNumber(menu_x_field, menu_y_field);
+    ProcessDotInteraction(dots, menu_x_field, menu_y_field);
 
     LabelVector[0].Draw();
     ButtonVector[5].Draw();
@@ -1193,22 +1270,18 @@ void SelectAmountOfPlayersMenu()
     
     SDL_RenderPresent(renderer);
   }
+
 }  
 
 void OnePlayerMenu()
 {
   ButtonVector[10].keytrick = false;
-  for (int i = 0; i < dots_menu_size; i++)
-  {
-    dots[i].exist = false;
-    dots[i].visited = false;
-    dots[i].deadend = false;
-  }
 
   while (GameState == ONEPM)
   {
     ButtonVector[10].Update(mouse);
     mouse.Update();
+
     SDL_PollEvent(&event);
     if ((event.type == SDL_KEYDOWN) && (event.type == SDL_QUIT))
       exit(0);
@@ -1229,16 +1302,18 @@ void OnePlayerMenu()
     
     SDL_GetMouseState(&xMouse,&yMouse);
     Zoom();
-    MoveBoard(field_x_base, field_y_base, move_game_speed);
+    MoveBoard(menu_x_field, menu_y_field, move_game_speed);
     SDL_SetRenderDrawColor(renderer, background_red, background_green,
       background_blue, BACKGROUND_OPACITY);
     SDL_RenderClear(renderer);
-    DrawField(field_x_base, field_y_base);
-    GetDotInput(dots, cur_color, field_x_base, field_y_base);
-    GetDotErase(dots, field_x_base, field_y_base);
-    DrawDots(dots, dots_menu_size, field_x_size);
-    EnumerateField(field_y_base, field_x_base, my_Font);
-    ProcessDotInteraction(dots, field_x_base, field_y_base);
+    DrawField(menu_x_field, menu_y_field);
+    if (GetDotInput(dots, cur_color, menu_x_field, menu_y_field))
+      ChangeDotColor();
+    GetDotErase(dots, menu_x_field, menu_y_field);
+    DrawDots(dots, menu_x_field * menu_y_field, menu_x_field);
+    EnumerateField(menu_y_field, menu_x_field, my_Font);
+    CheckLineNumber(menu_x_field, menu_y_field);
+    ProcessDotInteraction(dots, menu_x_field, menu_y_field);
 
     LabelVector[1].Draw();
     LabelVector[2].Draw();
@@ -1247,6 +1322,7 @@ void OnePlayerMenu()
     
     SDL_RenderPresent(renderer);
   }
+
 }
 
 void TwoPlayerMenu()
@@ -1254,12 +1330,6 @@ void TwoPlayerMenu()
   list <ColorSpace> Space;
   ButtonVector[10].keytrick = false;
   ButtonVector[12].keytrick = false;
-  for (int i = 0; i < dots_menu_size; i++)
-  {
-    dots[i].exist = false;
-    dots[i].visited = false;
-    dots[i].deadend = false;
-  }
 
   while (GameState == TWOPM)
   {
@@ -1268,6 +1338,7 @@ void TwoPlayerMenu()
     ButtonVector[12].Update(mouse);
     ClrButtonVector[0].Update(mouse);
     ClrButtonVector[1].Update(mouse);
+
     SDL_PollEvent(&event);
     if ( (event.type == SDL_KEYDOWN) && (event.type == SDL_QUIT) )
       exit(0);
@@ -1320,17 +1391,18 @@ void TwoPlayerMenu()
 
     SDL_GetMouseState(&xMouse,&yMouse);
     Zoom();
-    MoveBoard(field_x_base, field_y_base, move_game_speed);
+    MoveBoard(menu_x_field, menu_y_field, move_game_speed);
+    if (GetDotInput(dots, cur_color, menu_x_field, menu_y_field))
+      ChangeDotColor();
+    GetDotErase(dots, menu_x_field, menu_y_field);
     SDL_SetRenderDrawColor(renderer, background_red, background_green,
       background_blue, BACKGROUND_OPACITY);
     SDL_RenderClear(renderer);
-    DrawField(field_x_base, field_y_base);
-    EnumerateField(field_y_base, field_x_base, my_Font);
-
-    GetDotInput(dots, cur_color, field_x_base, field_y_base);
-    GetDotErase(dots, field_x_base, field_y_base);
-    DrawDots(dots, dots_menu_size, field_x_size);
-    Space = ProcessDotInteraction(dots, field_x_base, field_y_base);
+    DrawField(menu_x_field, menu_y_field);
+    DrawDots(dots, menu_x_field * menu_y_field, menu_x_field);
+    EnumerateField(menu_y_field, menu_x_field, my_Font);
+    CheckLineNumber(menu_x_field, menu_y_field);
+    Space = ProcessDotInteraction(dots, menu_x_field, menu_y_field);
 
     ClrButtonVector[0].Draw();
     ClrButtonVector[1].Draw();
@@ -1349,12 +1421,6 @@ void ThreePlayerMenu()
 {
   ButtonVector[10].keytrick = false;
   ButtonVector[12].keytrick = false;
-  for (int i = 0; i < dots_menu_size; i++)
-  {
-    dots[i].exist = false;
-    dots[i].visited = false;
-    dots[i].deadend = false;
-  }
 
   while (GameState == THREEPM)
   {
@@ -1364,6 +1430,7 @@ void ThreePlayerMenu()
     ClrButtonVector[2].Update(mouse);
     ClrButtonVector[3].Update(mouse);
     ClrButtonVector[4].Update(mouse);
+
     SDL_PollEvent(&event);
     if ( (event.type == SDL_KEYDOWN) && (event.type == SDL_QUIT) )
       exit(0);
@@ -1422,17 +1489,19 @@ void ThreePlayerMenu()
     }
 
     SDL_GetMouseState(&xMouse,&yMouse);
+    MoveBoard(menu_x_field, menu_y_field, move_game_speed);
+    if (GetDotInput(dots, cur_color, menu_x_field, menu_y_field))
+      ChangeDotColor();
+    GetDotErase(dots, menu_x_field, menu_y_field);
     Zoom();
-    MoveBoard(field_x_base, field_y_base, move_game_speed);
     SDL_SetRenderDrawColor(renderer, background_red, background_green,
       background_blue, BACKGROUND_OPACITY);
     SDL_RenderClear(renderer);
-    DrawField(field_x_base, field_y_base);
-    EnumerateField(field_y_base, field_x_base, my_Font);
-    GetDotInput(dots, cur_color, field_x_base, field_y_base);
-    GetDotErase(dots, field_x_base, field_y_base);
-    DrawDots(dots, dots_menu_size, field_x_size);
-    ProcessDotInteraction(dots, field_x_base, field_y_base);
+    DrawField(menu_x_field, menu_y_field);
+    DrawDots(dots, menu_x_field * menu_y_field, menu_x_field);
+    EnumerateField(menu_y_field, menu_x_field, my_Font);
+    CheckLineNumber(menu_x_field, menu_y_field);
+    ProcessDotInteraction(dots, menu_x_field, menu_y_field);
 
     ClrButtonVector[2].Draw();
     ClrButtonVector[3].Draw();
@@ -1446,18 +1515,13 @@ void ThreePlayerMenu()
     
     SDL_RenderPresent(renderer);
   }
+
 }
 
 void FourPlayerMenu()
-{
+{ 
   ButtonVector[10].keytrick = false;
   ButtonVector[12].keytrick = false;
-  for (int i = 0; i < dots_menu_size; i++)
-  {
-    dots[i].exist = false;
-    dots[i].visited = false;
-    dots[i].deadend = false;
-  }
 
   while (GameState == FOURPM)
   {
@@ -1532,17 +1596,19 @@ void FourPlayerMenu()
     }
 
     SDL_GetMouseState(&xMouse,&yMouse);
+    MoveBoard(menu_x_field, menu_y_field, move_game_speed);
+    if (GetDotInput(dots, cur_color, menu_x_field, menu_y_field))
+      ChangeDotColor();
+    GetDotErase(dots, menu_x_field, menu_y_field);
     Zoom();
-    MoveBoard(field_x_base, field_y_base, move_game_speed);
     SDL_SetRenderDrawColor(renderer, background_red, background_green,
       background_blue, BACKGROUND_OPACITY);
     SDL_RenderClear(renderer);
-    DrawField(field_x_base, field_y_base);
-    EnumerateField(field_y_base, field_x_base, my_Font);
-    GetDotInput(dots, cur_color, field_x_base, field_y_base);
-    GetDotErase(dots, field_x_base, field_y_base);
-    DrawDots(dots, dots_menu_size, field_x_size);
-    ProcessDotInteraction(dots, field_x_base, field_y_base);
+    DrawField(menu_x_field, menu_y_field);
+    DrawDots(dots, menu_x_field * menu_y_field, menu_x_field);
+    EnumerateField(menu_y_field, menu_x_field, my_Font);
+    CheckLineNumber(menu_x_field, menu_y_field);
+    ProcessDotInteraction(dots, menu_x_field, menu_y_field);
 
     LabelVector[3].Draw();
     LabelVector[4].Draw();
@@ -1557,10 +1623,12 @@ void FourPlayerMenu()
     
     SDL_RenderPresent(renderer);
   }
+
 }
 
 void GameSizeMenu()
 {
+  minintrv = default_minintrv;
   SDL_Surface *surfaceText;
   SDL_Surface *surfaceText2;
   SDL_Surface *surfaceText3;
@@ -1673,12 +1741,12 @@ void GameSizeMenu()
     surfaceText3 = TTF_RenderText_Solid(my_Font, "x", {255, 255, 0});
     textureText3 = SDL_CreateTextureFromSurface(renderer, surfaceText3);
 
-    string temp_str = to_string(game_x_size);
+    string temp_str = to_string(game_x_field);
     field_x = (char*) temp_str.c_str();
     surfaceText = TTF_RenderText_Solid(my_Font, field_x, {180, 255, 100});
     textureText = SDL_CreateTextureFromSurface(renderer, surfaceText);
 
-    temp_str = to_string(game_y_size);
+    temp_str = to_string(game_y_field);
     field_y = (char*) temp_str.c_str();
     surfaceText2 = TTF_RenderText_Solid(my_Font, field_y, {180, 255, 100});
     textureText2 = SDL_CreateTextureFromSurface(renderer, surfaceText2);
@@ -1686,65 +1754,65 @@ void GameSizeMenu()
     if ((SDL_HasIntersection(&rectangle, &mouse.point)) &&
         (event.type == SDL_KEYDOWN) &&
         (event.key.keysym.sym == SDLK_w))
-      game_x_size++;
+      game_x_field++;
 
     if ((SDL_HasIntersection(&rectangle, &mouse.point)) &&
         (event.type == SDL_KEYDOWN) &&
         (event.key.keysym.sym == SDLK_UP))
-      game_x_size += 10;
+      game_x_field += 10;
 
     if ((SDL_HasIntersection(&rectangle, &mouse.point)) &&
        (event.type == SDL_KEYDOWN) &&
       (event.key.keysym.sym == SDLK_s))
-      game_x_size--;
+      game_x_field--;
 
     if ((SDL_HasIntersection(&rectangle, &mouse.point)) &&
        (event.type == SDL_KEYDOWN) &&
        (event.key.keysym.sym == SDLK_DOWN))
-      game_x_size -= 10;
+      game_x_field -= 10;
 
     if ((SDL_HasIntersection(&rectangle2, &mouse.point)) &&
        (event.type == SDL_KEYDOWN) &&
        ((event.key.keysym.sym == SDLK_w) || (event.key.keysym.sym == SDLK_UP)))
-      game_y_size++;
+      game_y_field++;
 
     if ((SDL_HasIntersection(&rectangle2, &mouse.point)) && 
        (event.type == SDL_KEYDOWN) &&
        (event.key.keysym.sym == SDLK_UP))
-      game_y_size += 10;
+      game_y_field += 10;
 
     if ((SDL_HasIntersection(&rectangle2, &mouse.point)) && 
        (event.type == SDL_KEYDOWN) &&
        (event.key.keysym.sym == SDLK_s))
-      game_y_size--;
+      game_y_field--;
 
     if ((SDL_HasIntersection(&rectangle2, &mouse.point)) && 
        (event.type == SDL_KEYDOWN) &&
        (event.key.keysym.sym == SDLK_DOWN))
-      game_y_size -= 10;
+      game_y_field -= 10;
 
-    if (game_y_size < 5)
-      game_y_size = 5;
+    if (game_y_field < 5)
+      game_y_field = 5;
 
-    if (game_y_size > 320)
-      game_y_size = 320;
+    if (game_y_field > 320)
+      game_y_field = 320;
 
-    if (game_x_size < 5)
-      game_x_size = 5;
+    if (game_x_field < 5)
+      game_x_field = 5;
 
-    if (game_x_size > 320)
-      game_x_size = 320;
+    if (game_x_field > 320)
+      game_x_field = 320;
 
-    if (game_x_size >= 100)
+    if (game_x_field >= 100)
       rectangle.w = rectangle_w * 3;
-    else if (game_x_size < 10)
+    else if (game_x_field < 10)
       rectangle.w = rectangle_w;
     else
       rectangle.w = rectangle_w * 2;
 
-    if (game_y_size >= 100) 
+    if (game_y_field >= 100) 
       rectangle2.w = rectangle_w * 3;
-    else if (game_y_size < 10)
+    else if (game_y_field < 10)
       rectangle2.w = rectangle_w;
     else
       rectangle2.w = rectangle_w * 2;
@@ -1754,11 +1822,12 @@ void GameSizeMenu()
     SDL_SetRenderDrawColor(renderer, background_red, background_green,
       background_blue, BACKGROUND_OPACITY);
     SDL_RenderClear(renderer);
-    DrawField(game_x_size, game_y_size);
+    DrawField(game_x_field, game_y_field);
     if (!SDL_HasIntersection(&rectangle, &mouse.point) && 
         !SDL_HasIntersection(&rectangle2, &mouse.point))
-      MoveBoard(game_x_size, game_y_size, move_game_speed);
-    EnumerateField(game_y_size, game_x_size, my_Font);
+      MoveBoard(game_x_field, game_y_field, move_game_speed);
+    CheckLineNumber(game_x_field, game_y_field);
+    EnumerateField(game_y_field, game_x_field, my_Font);
 
     SDL_RenderCopy(renderer, textureText, NULL, &rectangle);
     SDL_RenderCopy(renderer, textureText2, NULL, &rectangle2);
@@ -1783,6 +1852,13 @@ void GameSizeMenu()
 
 void GameRuleMenu()
 {
+  minintrv = max(ScWidth / double(game_x_field + 4),
+    ScHeight / double(game_y_field + 4));
+  minintrv = max(minintrv, default_minintrv);
+  intrv = minintrv;
+  X_offset = 0;
+  Y_offset = 0;
+
   SDL_Surface *surfaceText4;
   SDL_Surface *surfaceText5;
   SDL_Texture *textureText4;
@@ -1950,14 +2026,15 @@ void GameRuleMenu()
 
     SDL_GetMouseState(&xMouse,&yMouse);
     Zoom();
+    if (!SDL_HasIntersection(&rectangle4, &mouse.point) && 
+      !SDL_HasIntersection(&rectangle5, &mouse.point))
+      MoveBoard(game_x_field, game_y_field, move_game_speed);
     SDL_SetRenderDrawColor(renderer, background_red, background_green,
       background_blue, SDL_ALPHA_OPAQUE);
     SDL_RenderClear(renderer);
-    DrawField(game_x_size, game_y_size);
-    if (!SDL_HasIntersection(&rectangle4, &mouse.point) && 
-      !SDL_HasIntersection(&rectangle5, &mouse.point))
-      MoveBoard(game_x_size, game_y_size, move_game_speed);
-    EnumerateField(game_y_size, game_x_size, my_Font);
+    DrawField(game_x_field, game_y_field);
+    CheckLineNumber(game_x_field, game_y_field);
+    EnumerateField(game_y_field, game_x_field, my_Font);
 
     SDL_RenderCopy(renderer, textureText4, NULL, &rectangle4);
     SDL_RenderCopy(renderer, textureText5, NULL, &rectangle5);
@@ -1981,14 +2058,19 @@ void GameRuleMenu()
 }
 
 void GameItself()
-{
-  int dots_game_size = game_y_size * game_x_size;
-  Dots *dots_g = new Dots[dots_game_size];
-  for (int i = 0; i < dots_game_size; i++)
+{ 
+  minintrv = max(ScWidth / double(game_x_field + 4),
+    ScHeight / double(game_y_field + 4));
+  minintrv = max(minintrv, default_minintrv);
+  intrv = minintrv;
+
+  Dots *dots_game = new Dots[game_x_field * game_y_field];
+  for (int i = 0; i < game_y_field * game_x_field; i++)
   {
-    dots_g[i].exist = false;
-    dots_g[i].visited = 0;
-    dots_g[i].deadend = false;
+    dots_game[i].exist = false;
+    dots_game[i].visited = false;
+    dots_game[i].deadend = false;
+    dots_game[i].space = false;
   }
 
   switch (pa_back)
@@ -2015,71 +2097,30 @@ void GameItself()
       exit(0);
 
     SDL_GetMouseState(&xMouse,&yMouse);
-    if (GetDotInput(dots_g, cur_color, game_x_size, game_y_size))
-    {
-      switch (pa_back)
-      {
-        case 2:
-        {
-          if (cur_color == ClrButtonVector[0].clr)
-            cur_color = ClrButtonVector[1].clr;
-          else
-            cur_color = ClrButtonVector[0].clr;
-          break;
-        }
-        case 3:
-        {
-          if (cur_color == ClrButtonVector[2].clr)
-            cur_color = ClrButtonVector[3].clr;
-          else if (cur_color == ClrButtonVector[3].clr)
-            cur_color = ClrButtonVector[4].clr;
-          else
-            cur_color = ClrButtonVector[2].clr;
-          break;
-        }
-        case 4:
-        {
-          if (cur_color == ClrButtonVector[5].clr)
-            cur_color = ClrButtonVector[6].clr;
-          else if (cur_color == ClrButtonVector[6].clr)
-            cur_color = ClrButtonVector[7].clr;
-          else if (cur_color == ClrButtonVector[7].clr)
-            cur_color = ClrButtonVector[8].clr;
-          else
-            cur_color = ClrButtonVector[5].clr;
-          break;
-        }
-      }
-    }
-
+    if (GetDotInput(dots_game, cur_color, game_x_field, game_y_field))
+      ChangeDotColor();
     Zoom();
+    MoveBoard(game_x_field, game_y_field, move_game_speed);
     SDL_SetRenderDrawColor(renderer, background_red, background_green,
       background_blue, SDL_ALPHA_OPAQUE);
     SDL_RenderClear(renderer);
-    MoveBoard(game_x_size, game_y_size, move_game_speed);
-    DrawField(game_x_size, game_y_size);
-    DrawDots(dots_g, dots_game_size, game_x_size);
-    EnumerateField(game_y_size, game_x_size, my_Font);
-    ProcessDotInteraction(dots_g, game_x_size, game_y_size);
+    DrawField(game_x_field, game_y_field);
+    DrawDots(dots_game, game_y_field * game_x_field, game_x_field);
+    EnumerateField(game_y_field, game_x_field, my_Font);
+    CheckLineNumber(game_x_field, game_y_field);
+    ProcessDotInteraction(dots_game, game_x_field, game_y_field);
 
     mouse.DrawDot(cur_color);
 
     SDL_RenderPresent(renderer);    
   }
-  delete dots_g;
+
+  delete dots_game;
 }
 
 
 int main(int argc, char *argv[])
 {
-  unordered_set <int> a = {1, 2, 3};
-  unordered_set <int> b = {1, 2, 3, 4};
-  unordered_set <int> c = {1, 2, 3, 4, 5};
-  unordered_set <int> d = {1, 2, 3, 4, 5};
-
-  cout << (a != b) << endl;
-  cout << (a != a) << endl;
-  cout << (c != d) << endl;
 
 ///////////////////////////////Finding out display parameters///////////////////
   #if __linux__
@@ -2104,8 +2145,21 @@ int main(int argc, char *argv[])
   mouse.circle_size = 9;
   vo = ScHeight / 8;  //vertical offset
   ho = ScWidth / 5;  //horizontal offset
-  X_offset = 0;
-  Y_offset = 0;
+
+  for (int i = 0; i < menu_x_field * menu_y_field; i++)
+  {
+    dots[i].exist = false;
+    dots[i].visited = false;
+    dots[i].deadend = false;
+    dots[i].space = false;
+  }
+  for (int i = 0; i < credits_x_field * credits_y_field; i++)
+  {
+    dots_credits[i].exist = false;
+    dots_credits[i].visited = false;
+    dots_credits[i].deadend = false;
+    dots_credits[i].space = false;
+  }
 
 /////////////////////////////////////Initializing SDL///////////////////////////
   window = SDL_CreateWindow("Dots", 0, 0, ScWidth, ScHeight,
@@ -2340,13 +2394,13 @@ int main(int argc, char *argv[])
   LabelVector.push_back(MaxeatendotsLabel);  //10 - index
   MaxeatendotsLabel.~Label();
 
-  ColorButton P21(200, 70, 200);
+  ColorButton P21(45, 170, 0);
   P21.rect.x = ScWidth / 3 - P21.rect.w / 2; 
   P21.rect.y = vo * 4;
   ClrButtonVector.push_back(P21); //0 - index
   P21.~ColorButton();
 
-  ColorButton P22(185, 185, 115);
+  ColorButton P22(255, 220, 30);
   P22.rect.x = ScWidth * 2 / 3 - P22.rect.w / 2; 
   P22.rect.y = vo * 4;
   ClrButtonVector.push_back(P22); //1 - index
