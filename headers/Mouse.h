@@ -6,7 +6,7 @@ using namespace std;
 
 const char mouse_name[] = "images/mouse.png";
 const char mouse_circle_name[] = "images/transparent_mouse.png";
-const int MOUSE_OPACITY = 182;
+const int MOUSE_OPACITY = 170;
 
 class Mouse
 {

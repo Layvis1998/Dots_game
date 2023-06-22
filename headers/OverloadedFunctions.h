@@ -55,3 +55,47 @@ bool operator!=(unordered_set<int> &a, unordered_set<int> &b)
   }
   return false;
 }
+
+bool operator>(unordered_set<int> &a, unordered_set<int> &b)
+{
+  bool b_in_a = true;
+  for (auto i = b.begin(); i != b.end(); i++ )
+  {
+    if (!a.count(*i))
+    {  
+      return b_in_a = false;
+      return false;
+    }
+  }
+
+  bool a_not_in_b = false;
+  for (auto i = a.begin(); i != a.end(); i++ )
+  {
+    if (!b.count(*i))
+      a_not_in_b = true;
+  }
+
+  return (b_in_a && a_not_in_b);
+}
+
+bool operator<(unordered_set<int> &a, unordered_set<int> &b)
+{
+  bool a_in_b = true;
+  for (auto i = a.begin(); i != a.end(); i++ )
+  {
+    if (!b.count(*i))
+    {  
+      return a_in_b = false;
+      return false;
+    }
+  }
+
+  bool b_not_in_a = false;
+  for (auto i = b.begin(); i != b.end(); i++ )
+  {
+    if (!a.count(*i))
+      b_not_in_a = true;
+  }
+
+  return (a_in_b && b_not_in_a);
+}

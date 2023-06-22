@@ -33,7 +33,8 @@ struct Dots
   bool visited;
   bool deadend;
   bool cycle;
-  bool space;
+  bool spaceborder;
+  bool spaceinside;
 };
 
 struct ColorSpace
@@ -61,7 +62,7 @@ const uint8_t BACKGROUND_OPACITY = 20;
 
 //gloabal variables
 uint16_t intrv = 20; // interval
-uint16_t maxintrv = 100;
+uint16_t maxintrv = 120;
 uint16_t minintrv = default_minintrv; 
 int vo;  //vertical offset
 int ho;  //horizontal offset
@@ -116,8 +117,8 @@ void FindConnectedDots (Dots* dots, int current, unordered_set <int> &uset,
   //up-right direction
   if (((current + 1) % fx != 0) && (current - fx >= 0)
     && (dots[current + 1 - fx].exist == true)
-    && (dots[current + 1 - fx].deadend == false)
     && (dots[current + 1 - fx].clr == C)
+    && (dots[current + 1 - fx].deadend == false)
     && (dots[current + 1 - fx].visited == false))
   {
     FindConnectedDots(dots, current + 1 - fx, uset, fx, fy);
@@ -126,8 +127,8 @@ void FindConnectedDots (Dots* dots, int current, unordered_set <int> &uset,
   // right direction
   if (((current + 1) % fx != 0)
     && (dots[current + 1].exist == true)
-    && (dots[current + 1].deadend == false)
     && (dots[current + 1].clr == C)
+    && (dots[current + 1].deadend == false)
     && (dots[current + 1].visited == false))
   {                  
     FindConnectedDots(dots, current + 1, uset, fx, fy);
@@ -136,8 +137,8 @@ void FindConnectedDots (Dots* dots, int current, unordered_set <int> &uset,
   //down-right direction  
   if (((current + 1) % fx != 0) && (current + fx < fx * fy)
     && (dots[current + 1 + fx].exist == true)
-    && (dots[current + 1 + fx].deadend == false)
     && (dots[current + 1 + fx].clr == C)
+    && (dots[current + 1 + fx].deadend == false)
     && (dots[current + 1 + fx].visited == false))   
   {
     FindConnectedDots(dots, current + 1 + fx, uset, fx, fy);  
@@ -146,8 +147,8 @@ void FindConnectedDots (Dots* dots, int current, unordered_set <int> &uset,
   // down direction
   if  ((current + fx < fx * fy)
     && (dots[current + fx].exist == true)
-    && (dots[current + fx].deadend == false)
     && (dots[current + fx].clr == C)
+    && (dots[current + fx].deadend == false)
     && (dots[current + fx].visited == false))
   { 
     FindConnectedDots(dots, current + fx, uset, fx, fy);
@@ -156,8 +157,8 @@ void FindConnectedDots (Dots* dots, int current, unordered_set <int> &uset,
   //down-left direction
   if  ((current % fx != 0) && (current + fx < fx * fy)
     && (dots[current - 1 + fx].exist == true)
-    && (dots[current - 1 + fx].deadend == false)
     && (dots[current - 1 + fx].clr == C)
+    && (dots[current - 1 + fx].deadend == false)
     && (dots[current - 1 + fx].visited == false))
   { 
     FindConnectedDots(dots, current - 1 + fx, uset, fx, fy); 
@@ -166,8 +167,8 @@ void FindConnectedDots (Dots* dots, int current, unordered_set <int> &uset,
   // left direction
   if  ((current % fx != 0)
     && (dots[current - 1].exist == true)
-    && (dots[current - 1].deadend == false)
-    && (dots[current - 1].clr == C)
+    && (dots[current - 1].clr == C
+    && (dots[current - 1].deadend == false))
     && (dots[current - 1].visited == false))
   {  
     FindConnectedDots(dots, current - 1, uset, fx, fy);  
@@ -176,8 +177,8 @@ void FindConnectedDots (Dots* dots, int current, unordered_set <int> &uset,
   //up-left direction 
   if  ((current % fx != 0) && (current - fx >= 0)
     && (dots[current - 1 - fx].exist == true)
-    && (dots[current - 1 - fx].deadend == false)
     && (dots[current - 1 - fx].clr == C)
+    && (dots[current - 1 - fx].deadend == false)
     && (dots[current - 1 - fx].visited == false))
   {
     FindConnectedDots(dots, current - 1 - fx, uset, fx, fy); 
@@ -186,8 +187,8 @@ void FindConnectedDots (Dots* dots, int current, unordered_set <int> &uset,
   // up diterction
   if  ((current - fx >= 0)
     && (dots[current - fx].exist == true)
-    && (dots[current - fx].deadend == false)
     && (dots[current - fx].clr == C)
+    && (dots[current - fx].deadend == false)
     && (dots[current - fx].visited == false))                                        
   { 
     FindConnectedDots(dots, current - fx, uset, fx, fy);
@@ -201,50 +202,50 @@ int DifferentWays( Dots* dots, int current, int fx , int fy)
 
   if (((current + 1) % fx != 0)
     && (dots[current + 1].exist == true)
-    && (dots[current + 1].deadend != true)
-    && (dots[current + 1].clr == C))
+    && (dots[current + 1].clr == C)
+    && (dots[current + 1].deadend != true))
     retval++;
 
   if (((current + 1) % fx != 0) && (current + fx < fx * fy)
     && (dots[current + 1 + fx].exist == true)
-    && (dots[current + 1 + fx].deadend != true)
-    && (dots[current + 1 + fx].clr == C))
+    && (dots[current + 1 + fx].clr == C)
+    && (dots[current + 1 + fx].deadend != true))
     retval++;
 
   if  ((current + fx < fx * fy)
     && (dots[current + fx].exist == true)
-    && (dots[current + fx].deadend != true)
-    && (dots[current + fx].clr == C))
+    && (dots[current + fx].clr == C)
+    && (dots[current + fx].deadend != true))
     retval++;
 
   if  ((current % fx != 0) && (current + fx < fx * fy)
     && (dots[current - 1 + fx].exist == true)
-    && (dots[current - 1 + fx].deadend != true)
-    && (dots[current - 1 + fx].clr == C))
+    && (dots[current - 1 + fx].clr == C)
+    && (dots[current - 1 + fx].deadend != true))
     retval++;
 
   if  ((current % fx != 0)
     && (dots[current - 1].exist == true)
-    && (dots[current - 1].deadend != true)
-    && (dots[current - 1].clr == C))
+    && (dots[current - 1].clr == C)
+    && (dots[current - 1].deadend != true))
     retval++;
 
   if  ((current % fx != 0) && (current - fx >= 0)
     && (dots[current - 1 - fx].exist == true)
-    && (dots[current - 1 - fx].deadend != true)
-    && (dots[current - 1 - fx].clr == C))
+    && (dots[current - 1 - fx].clr == C)
+    && (dots[current - 1 - fx].deadend != true))
     retval++;
 
   if  ((current - fx >= 0)
     && (dots[current - fx].exist == true)
-    && (dots[current - fx].deadend != true)
-    && (dots[current - fx].clr == C))  
+    && (dots[current - fx].clr == C)
+    && (dots[current - fx].deadend != true))  
     retval++;
 
   if (((current + 1) % fx != 0) && (current - fx >= 0)
     && (dots[current + 1 - fx].exist == true)
-    && (dots[current + 1 - fx].deadend != true)
-    && (dots[current + 1 - fx].clr == C))
+    && (dots[current + 1 - fx].clr == C)
+    && (dots[current + 1 - fx].deadend != true))
     retval++;
 
   return retval;
@@ -283,18 +284,18 @@ void ExtractCycle (Dots* dots, int current, unordered_set <int> &uset,
   if (((current + 1) % fx != 0)
     && (current - fx >= 0 )
     && (dots[current + 1 - fx].exist == true)
+    && (dots[current + 1 - fx].clr == C) 
     && (dots[current + 1 - fx].deadend == false)
-    && (dots[current + 1 - fx].cycle == false)
-    && (dots[current + 1 - fx].clr == C) )
+    && (dots[current + 1 - fx].cycle == false))
   {
     ExtractCycle(dots, current + 1 - fx, uset, fx, fy);
   }
   // right direction
   else if (((current + 1) % fx != 0)
     && (dots[current + 1].exist == true)
+    && (dots[current + 1].clr == C)
     && (dots[current + 1].deadend == false)
-    && (dots[current + 1].cycle == false)
-    && (dots[current + 1].clr == C))
+    && (dots[current + 1].cycle == false))
   {                  
     ExtractCycle(dots, current + 1, uset, fx, fy);
   }
@@ -302,18 +303,18 @@ void ExtractCycle (Dots* dots, int current, unordered_set <int> &uset,
   else if (((current + 1) % fx != 0)
     && ( current + fx < fx * fy )
     && (dots[current + 1 + fx].exist == true)
+    && (dots[current + 1 + fx].clr == C)
     && (dots[current + 1 + fx].deadend == false)
-    && (dots[current + 1 + fx].cycle == false)
-    && (dots[current + 1 + fx].clr == C))   
+    && (dots[current + 1 + fx].cycle == false))   
   {
     ExtractCycle(dots, current + 1 + fx, uset, fx, fy);  
   }
   // down direction
   else if ((current + fx < fx * fy)
     && (dots[current + fx].exist == true)
+    && (dots[current + fx].clr == C)
     && (dots[current + fx].deadend == false)
-    && (dots[current + fx].cycle == false)
-    && (dots[current + fx].clr == C))
+    && (dots[current + fx].cycle == false))
   { 
     ExtractCycle(dots, current + fx, uset, fx, fy);
   }
@@ -321,18 +322,18 @@ void ExtractCycle (Dots* dots, int current, unordered_set <int> &uset,
   else if ((current % fx != 0)
     && (current + fx < fx * fy)
     && (dots[current - 1 + fx].exist == true)
+    && (dots[current - 1 + fx].clr == C)
     && (dots[current - 1 + fx].deadend == false)
-    && (dots[current - 1 + fx].cycle == false)
-    && (dots[current - 1 + fx].clr == C))
+    && (dots[current - 1 + fx].cycle == false))
   { 
     ExtractCycle(dots, current - 1 + fx, uset, fx, fy); 
   }
   // left direction
   else if (( current % fx != 0)
     && (dots[current - 1].exist == true)
+    && (dots[current - 1].clr == C)
     && (dots[current - 1].deadend == false)
-    && (dots[current - 1].cycle == false)
-    && (dots[current - 1].clr == C))
+    && (dots[current - 1].cycle == false))
   {  
     ExtractCycle(dots, current - 1, uset, fx, fy);  
   }
@@ -340,24 +341,24 @@ void ExtractCycle (Dots* dots, int current, unordered_set <int> &uset,
   else if ((current % fx != 0)
     && (current - fx >= 0)
     && (dots[current - 1 - fx].exist == true)
+    && (dots[current - 1 - fx].clr == C)
     && (dots[current - 1 - fx].deadend == false)
-    && (dots[current - 1 - fx].cycle == false)
-    && (dots[current - 1 - fx].clr == C))
+    && (dots[current - 1 - fx].cycle == false))
   {
     ExtractCycle(dots, current - 1 - fx, uset, fx, fy); 
   }
   // up diterction
   else if ((current - fx >= 0)
     && (dots[current - fx].exist == true)
+    && (dots[current - fx].clr == C)
     && (dots[current - fx].deadend == false)
-    && (dots[current - fx].cycle == false)
-    && (dots[current - fx].clr == C))                                        
+    && (dots[current - fx].cycle == false))                                        
   { 
     ExtractCycle(dots, current - fx, uset, fx, fy);
   }
 }
 
-int DifferentWaysE
+int DifferentWaysUset
   (Dots* dots, unordered_set <int> uset, int current, int fx , int fy)
 {
   int retval = 0;
@@ -389,7 +390,7 @@ int DifferentWaysE
   return retval;
 }
 
-void DeleteBranchesE
+void DeleteBranchesUset
  (Dots* dots, int current, unordered_set <int> &uset, int fx, int fy)
 {
   bool branchdeleted = true;
@@ -399,7 +400,7 @@ void DeleteBranchesE
     branchdeleted = false;
     for (auto i = uset.begin(); i != uset.end(); )
     {
-      if (DifferentWaysE(dots, uset, *i, fx , fy) <= 1)
+      if (DifferentWaysUset(dots, uset, *i, fx , fy) <= 1)
       { 
         branchdeleted = true; 
         i = uset.erase(i);
@@ -442,10 +443,11 @@ bool CheckForColor(unordered_set <int> CycleSet, Dots* dots, int fx)
       }
     }
   }
+
   return Check;
 }
 
-void FillCycle(unordered_set <int> CycleSet, Dots* dots, int fx)
+ColorSpace CreateSpace(unordered_set <int> CycleSet, Dots* dots, int fx)
 {
   vector <int> CycleVector;
   for (auto i = CycleSet.begin(); i != CycleSet.end(); i++)
@@ -474,6 +476,7 @@ void FillCycle(unordered_set <int> CycleSet, Dots* dots, int fx)
       SameLine.front() % fx - Y_offset,  SameLine.back() / fx - X_offset,
       SameLine.back() % fx - Y_offset);
   }
+
 }
 
 int Min (unordered_set <int> uset)
@@ -520,13 +523,13 @@ list <ColorSpace> ProcessDotInteraction (Dots* dots, int fx, int fy)
       unordered_set <int> Cycle;
       int start = Min(ConnectedCycles);
       ExtractCycle(dots, start, Cycle, fx, fy);
-      DeleteBranchesE(dots, start, Cycle, fx, fy);
+      DeleteBranchesUset(dots, start, Cycle, fx, fy);
       //cout << "Extracted cycle size = "  << Cycle.size() << endl;
       //cout << "Fill cycle : " << CheckForColor(Cycle, dots, fx) << endl;
-      if (CheckForColor(Cycle, dots, fx))
-        FillCycle(Cycle, dots, fx);
+      /*if (CheckForColor(Cycle, dots, fx))
+        FillCycle(Cycle, dots, fx);*/
       ConnectedCycles -= Cycle;
-      DeleteBranchesE(dots, start, ConnectedCycles, fx, fy);
+      DeleteBranchesUset(dots, start, ConnectedCycles, fx, fy);
     }
   }
   return result;
@@ -895,7 +898,7 @@ void Zoom()
         (2 * yMouse * (double(intrv) / (intrv + 1) -  1)) / 2 ;
     }
     
-    dot_size = round(intrv * 20 / 64.0);
+    dot_size = round(intrv * 20 / 61.0);
     mouse.circle_size = dot_size + 2;
   }
 }
@@ -946,12 +949,13 @@ void GetDotErase(Dots *dots, int fxs, int fys)
     int coeff = round((xMouse + X_offset) / float(intrv)) - 2 +
       + (round((yMouse + Y_offset) / float(intrv)) - 2) * fxs;
     
-    if (dots[coeff].space == false) 
+    if ((dots[coeff].spaceborder == false) &&
+       (dots[coeff].spaceinside == false)) 
       dots[coeff].exist = false;      
   }
 }
 
-void CheckLineNumber(int fxs, int fys)
+void CheckPositionInField(int fxs, int fys)
 {
   if ( (  (((yMouse + Y_offset) % intrv) <= intrv / 3.0)
     || (((yMouse + Y_offset) % intrv) >= intrv * 2 / 3.0)) 
@@ -967,16 +971,15 @@ void CheckLineNumber(int fxs, int fys)
     SDL_Surface* surfaceText;
     SDL_Texture* textureText;
     SDL_Rect rectangleE;
+    int line = round((yMouse + Y_offset) / float(intrv)) - 2;
+    int clmn = round((xMouse + X_offset) / float(intrv)) - 2;
 
-    rectangleE.h = max (uint16_t(intrv / 2.0), uint16_t(35));
+    rectangleE.h = max (uint16_t(intrv / 2.0), uint16_t(30));
     rectangleE.w = rectangleE.h * 4;
 
-    string line_num = 
-        "line" + to_string(int(round((yMouse + Y_offset) / float(intrv)) - 2))
-      + ", clmn" + to_string(int(round((xMouse + X_offset) / float(intrv)) - 2));
-
+    string line_num = "line" + to_string(line) + ", clmn" + to_string(clmn);
     char* num = (char*) line_num.c_str();
-    surfaceText = TTF_RenderText_Solid(my_Font, num, TextColor);
+    surfaceText = TTF_RenderText_Solid(my_Font, num, mouse.clr);
     textureText = SDL_CreateTextureFromSurface(renderer, surfaceText);
     rectangleE.x = xMouse + mouse.circle_size;
     rectangleE.y = yMouse;
@@ -1090,7 +1093,7 @@ void MainMenu()
     DrawField(menu_x_field, menu_y_field);
     DrawDots(dots, menu_x_field * menu_y_field, menu_x_field);
     EnumerateField(menu_y_field, menu_x_field, my_Font);
-    CheckLineNumber(menu_x_field, menu_y_field);
+    CheckPositionInField(menu_x_field, menu_y_field);
     ProcessDotInteraction(dots, menu_x_field, menu_y_field);
 
     ButtonVector[0].Draw();
@@ -1102,7 +1105,6 @@ void MainMenu()
 
     SDL_RenderPresent(renderer);
   }
-
 }
 
 void CreditsMenu()
@@ -1156,7 +1158,7 @@ void CreditsMenu()
     DrawDots(dots_credits, credits_y_field * credits_x_field, credits_x_field);
     EnumerateField(credits_y_field, credits_x_field, my_Font);
     FillCredits(my_Font);
-    CheckLineNumber(credits_x_field, credits_y_field);
+    CheckPositionInField(credits_x_field, credits_y_field);
     ProcessDotInteraction(dots_credits, credits_x_field, credits_y_field);
 
     ButtonVector[11].Draw();
@@ -1257,7 +1259,7 @@ void SelectAmountOfPlayersMenu()
     DrawField(menu_x_field, menu_y_field);
     DrawDots(dots, menu_x_field * menu_y_field, menu_x_field);
     EnumerateField(menu_y_field, menu_x_field, my_Font);
-    CheckLineNumber(menu_x_field, menu_y_field);
+    CheckPositionInField(menu_x_field, menu_y_field);
     ProcessDotInteraction(dots, menu_x_field, menu_y_field);
 
     LabelVector[0].Draw();
@@ -1270,11 +1272,12 @@ void SelectAmountOfPlayersMenu()
     
     SDL_RenderPresent(renderer);
   }
-
 }  
 
 void OnePlayerMenu()
 {
+  X_offset = 0;
+  Y_offset = 0;
   ButtonVector[10].keytrick = false;
 
   while (GameState == ONEPM)
@@ -1312,7 +1315,7 @@ void OnePlayerMenu()
     GetDotErase(dots, menu_x_field, menu_y_field);
     DrawDots(dots, menu_x_field * menu_y_field, menu_x_field);
     EnumerateField(menu_y_field, menu_x_field, my_Font);
-    CheckLineNumber(menu_x_field, menu_y_field);
+    CheckPositionInField(menu_x_field, menu_y_field);
     ProcessDotInteraction(dots, menu_x_field, menu_y_field);
 
     LabelVector[1].Draw();
@@ -1322,11 +1325,12 @@ void OnePlayerMenu()
     
     SDL_RenderPresent(renderer);
   }
-
 }
 
 void TwoPlayerMenu()
 {
+  X_offset = 0;
+  Y_offset = 0;
   list <ColorSpace> Space;
   ButtonVector[10].keytrick = false;
   ButtonVector[12].keytrick = false;
@@ -1401,7 +1405,7 @@ void TwoPlayerMenu()
     DrawField(menu_x_field, menu_y_field);
     DrawDots(dots, menu_x_field * menu_y_field, menu_x_field);
     EnumerateField(menu_y_field, menu_x_field, my_Font);
-    CheckLineNumber(menu_x_field, menu_y_field);
+    CheckPositionInField(menu_x_field, menu_y_field);
     Space = ProcessDotInteraction(dots, menu_x_field, menu_y_field);
 
     ClrButtonVector[0].Draw();
@@ -1419,6 +1423,8 @@ void TwoPlayerMenu()
 
 void ThreePlayerMenu()
 {
+  X_offset = 0;
+  Y_offset = 0;
   ButtonVector[10].keytrick = false;
   ButtonVector[12].keytrick = false;
 
@@ -1500,7 +1506,7 @@ void ThreePlayerMenu()
     DrawField(menu_x_field, menu_y_field);
     DrawDots(dots, menu_x_field * menu_y_field, menu_x_field);
     EnumerateField(menu_y_field, menu_x_field, my_Font);
-    CheckLineNumber(menu_x_field, menu_y_field);
+    CheckPositionInField(menu_x_field, menu_y_field);
     ProcessDotInteraction(dots, menu_x_field, menu_y_field);
 
     ClrButtonVector[2].Draw();
@@ -1515,11 +1521,12 @@ void ThreePlayerMenu()
     
     SDL_RenderPresent(renderer);
   }
-
 }
 
 void FourPlayerMenu()
 { 
+  X_offset = 0;
+  Y_offset = 0;
   ButtonVector[10].keytrick = false;
   ButtonVector[12].keytrick = false;
 
@@ -1607,7 +1614,7 @@ void FourPlayerMenu()
     DrawField(menu_x_field, menu_y_field);
     DrawDots(dots, menu_x_field * menu_y_field, menu_x_field);
     EnumerateField(menu_y_field, menu_x_field, my_Font);
-    CheckLineNumber(menu_x_field, menu_y_field);
+    CheckPositionInField(menu_x_field, menu_y_field);
     ProcessDotInteraction(dots, menu_x_field, menu_y_field);
 
     LabelVector[3].Draw();
@@ -1623,11 +1630,12 @@ void FourPlayerMenu()
     
     SDL_RenderPresent(renderer);
   }
-
 }
 
 void GameSizeMenu()
 {
+  X_offset = 0;
+  Y_offset = 0;
   minintrv = default_minintrv;
   SDL_Surface *surfaceText;
   SDL_Surface *surfaceText2;
@@ -1826,7 +1834,7 @@ void GameSizeMenu()
     if (!SDL_HasIntersection(&rectangle, &mouse.point) && 
         !SDL_HasIntersection(&rectangle2, &mouse.point))
       MoveBoard(game_x_field, game_y_field, move_game_speed);
-    CheckLineNumber(game_x_field, game_y_field);
+    CheckPositionInField(game_x_field, game_y_field);
     EnumerateField(game_y_field, game_x_field, my_Font);
 
     SDL_RenderCopy(renderer, textureText, NULL, &rectangle);
@@ -2033,7 +2041,7 @@ void GameRuleMenu()
       background_blue, SDL_ALPHA_OPAQUE);
     SDL_RenderClear(renderer);
     DrawField(game_x_field, game_y_field);
-    CheckLineNumber(game_x_field, game_y_field);
+    CheckPositionInField(game_x_field, game_y_field);
     EnumerateField(game_y_field, game_x_field, my_Font);
 
     SDL_RenderCopy(renderer, textureText4, NULL, &rectangle4);
@@ -2063,6 +2071,8 @@ void GameItself()
     ScHeight / double(game_y_field + 4));
   minintrv = max(minintrv, default_minintrv);
   intrv = minintrv;
+  X_offset = 0;
+  Y_offset = 0;
 
   Dots *dots_game = new Dots[game_x_field * game_y_field];
   for (int i = 0; i < game_y_field * game_x_field; i++)
@@ -2070,7 +2080,8 @@ void GameItself()
     dots_game[i].exist = false;
     dots_game[i].visited = false;
     dots_game[i].deadend = false;
-    dots_game[i].space = false;
+    dots_game[i].spaceinside = false;
+    dots_game[i].spaceborder = false;
   }
 
   switch (pa_back)
@@ -2107,7 +2118,7 @@ void GameItself()
     DrawField(game_x_field, game_y_field);
     DrawDots(dots_game, game_y_field * game_x_field, game_x_field);
     EnumerateField(game_y_field, game_x_field, my_Font);
-    CheckLineNumber(game_x_field, game_y_field);
+    CheckPositionInField(game_x_field, game_y_field);
     ProcessDotInteraction(dots_game, game_x_field, game_y_field);
 
     mouse.DrawDot(cur_color);
@@ -2151,14 +2162,16 @@ int main(int argc, char *argv[])
     dots[i].exist = false;
     dots[i].visited = false;
     dots[i].deadend = false;
-    dots[i].space = false;
+    dots[i].spaceinside = false;
+    dots[i].spaceborder = false;
   }
   for (int i = 0; i < credits_x_field * credits_y_field; i++)
   {
     dots_credits[i].exist = false;
     dots_credits[i].visited = false;
     dots_credits[i].deadend = false;
-    dots_credits[i].space = false;
+    dots[i].spaceinside = false;
+    dots[i].spaceborder = false;
   }
 
 /////////////////////////////////////Initializing SDL///////////////////////////
