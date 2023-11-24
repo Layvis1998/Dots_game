@@ -1,0 +1,49 @@
+#pragma once
+#include <SDL2/SDL.h>
+#include <stdint.h>
+
+const char* mouse_name;
+const char* mouse_circle_name;
+int MOUSE_OPACITY;
+
+class Mouse
+{
+public:	
+  SDL_Texture * tex;
+  SDL_Rect rect;
+  SDL_Rect point;
+  SDL_Color clr;
+  uint8_t circle_size;
+
+  Mouse();
+  GiveColor(SDL_Color color);
+  void Update();
+  void Draw();
+  void DrawDot(SDL_Color scolor);
+  void DrawColor();
+};
+
+class Label
+{
+public:
+  SDL_Texture * tex;
+  SDL_Rect srect, drect;
+  bool IsSelected;
+
+  Label (const char img_path[], int w, int h, int srecth, int srectw);
+  void Draw();
+};
+
+class ColorButton 
+{
+public:
+  SDL_Color clr;
+  SDL_Rect rect;
+  bool IsSelected;
+
+  ColorButton (uint8_t r, uint8_t g, uint8_t b);
+  void Update (Mouse& mouse);
+  void ChangeColor();
+  void Draw();
+  
+};
