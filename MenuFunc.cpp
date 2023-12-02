@@ -118,83 +118,1047 @@ void FindConnectedDots (Dots* dots, int current, unordered_set <int> &uset,
   }
 }
 
-void ExtractCycle (Dots* dots, int current, unordered_set <int> &uset, 
-  int fx, int fy)
+
+
+
+enum Directions {up, upright, right, downright, down, downleft, left, upleft};
+
+void ExtractCycle (Dots* dots, int current, unordered_set <int> &uset,
+             unordered_set <int> &Cycles, int fx, Directions d);
+
+void Down(Dots* dots, int current, unordered_set <int> &uset,
+             unordered_set <int> &Cycles, int fx, Directions d)
 {
-  SDL_Color C = dots[current].clr;
-  dots[current].cycle += 1;
-
-  cout << current << " " << endl;
-  uset.insert(current);
-
+  /*
   //up-right direction
-  if (((current + 1) % fx != 0)
-    && (current - fx >= 0 )
-    && (dots[current + 1 - fx].exist == true)
-    && (dots[current + 1 - fx].clr == C) 
+  if (  (Cycles.count(current + 1 - fx))
     && (dots[current + 1 - fx].cycle == false))
   {
-    ExtractCycle(dots, current + 1 - fx, uset, fx, fy);
+    d = upright;
+    ExtractCycle(dots, current + 1 - fx, uset, Cycles, fx, d);
   }
+  */
   // right direction
-  else if (((current + 1) % fx != 0)
-    && (dots[current + 1].exist == true)
-    && (dots[current + 1].clr == C)
+  if ((Cycles.count(current + 1))
     && (dots[current + 1].cycle == false))
   {                  
-    ExtractCycle(dots, current + 1, uset, fx, fy);
+    d = right;
+    ExtractCycle(dots, current + 1, uset, Cycles, fx, d);
   }
   //down-right direction  
-  else if (((current + 1) % fx != 0)
-    && ( current + fx < fx * fy )
-    && (dots[current + 1 + fx].exist == true)
-    && (dots[current + 1 + fx].clr == C)
+  else if ((Cycles.count(current + 1 + fx))
     && (dots[current + 1 + fx].cycle == false))   
   {
-    ExtractCycle(dots, current + 1 + fx, uset, fx, fy);  
+    d = downright;
+    ExtractCycle(dots, current + 1 + fx, uset, Cycles, fx, d);  
   }
   // down direction
-  else if ((current + fx < fx * fy)
-    && (dots[current + fx].exist == true)
-    && (dots[current + fx].clr == C)
+  else if ((Cycles.count(current + fx))
     && (dots[current + fx].cycle == false))
   { 
-    ExtractCycle(dots, current + fx, uset, fx, fy);
+    d = down;
+    ExtractCycle(dots, current + fx, uset, Cycles, fx, d);
   }
   //down-left direction
-  else if ((current % fx != 0)
-    && (current + fx < fx * fy)
-    && (dots[current - 1 + fx].exist == true)
-    && (dots[current - 1 + fx].clr == C)
+  else if ((Cycles.count(current - 1 + fx))
     && (dots[current - 1 + fx].cycle == false))
   { 
-    ExtractCycle(dots, current - 1 + fx, uset, fx, fy); 
+    d = downleft;
+    ExtractCycle(dots, current - 1 + fx, uset, Cycles, fx, d); 
   }
   // left direction
-  else if (( current % fx != 0)
-    && (dots[current - 1].exist == true)
-    && (dots[current - 1].clr == C)
+  else if ((Cycles.count(current - 1))
     && (dots[current - 1].cycle == false))
   {  
-    ExtractCycle(dots, current - 1, uset, fx, fy);  
+    d = left;
+    ExtractCycle(dots, current - 1, uset, Cycles, fx, d);  
   }
   //up-left direction 
-  else if ((current % fx != 0)
-    && (current - fx >= 0)
-    && (dots[current - 1 - fx].exist == true)
-    && (dots[current - 1 - fx].clr == C)
+  else if ((Cycles.count(current - 1 - fx))
     && (dots[current - 1 - fx].cycle == false))
   {
-    ExtractCycle(dots, current - 1 - fx, uset, fx, fy); 
+    d = upleft;
+    ExtractCycle(dots, current - 1 - fx, uset, Cycles, fx, d); 
   }
+  /*  
   // up diterction
-  else if ((current - fx >= 0)
-    && (dots[current - fx].exist == true)
-    && (dots[current - fx].clr == C)
+  else if ((Cycles.count(current - fx))
     && (dots[current - fx].cycle == false))                                        
   { 
-    ExtractCycle(dots, current - fx, uset, fx, fy);
+    d = up;
+    ExtractCycle(dots, current - fx, uset, Cycles, fx, d);
   }
+  
+ 
+  //up-right direction
+  else if (  (Cycles.count(current + 1 - fx))
+    && (dots[current + 1 - fx].cycle == 1))
+  {
+    d = upright;
+    ExtractCycle(dots, current + 1 - fx, uset, Cycles, fx, d);
+  }
+  */
+  // right direction
+  else if ((Cycles.count(current + 1))
+    && (dots[current + 1].cycle == 1))
+  {                  
+    d = right;
+    ExtractCycle(dots, current + 1, uset, Cycles, fx, d);
+  }
+  //down-right direction  
+  else if ((Cycles.count(current + 1 + fx))
+    && (dots[current + 1 + fx].cycle == 1))   
+  {
+    d = downright;
+    ExtractCycle(dots, current + 1 + fx, uset, Cycles, fx, d);  
+  }
+  // down direction
+  else if ((Cycles.count(current + fx))
+    && (dots[current + fx].cycle == 1))
+  { 
+    d = down;
+    ExtractCycle(dots, current + fx, uset, Cycles, fx, d);
+  }
+  //down-left direction
+  else if ((Cycles.count(current - 1 + fx))
+    && (dots[current - 1 + fx].cycle == 1))
+  { 
+    d = downleft;
+    ExtractCycle(dots, current - 1 + fx, uset, Cycles, fx, d); 
+  }
+  // left direction
+  else if ((Cycles.count(current - 1))
+    && (dots[current - 1].cycle == 1))
+  {  
+    d = left;
+    ExtractCycle(dots, current - 1, uset, Cycles, fx, d);  
+  }
+  //up-left direction 
+  else if ((Cycles.count(current - 1 - fx))
+    && (dots[current - 1 - fx].cycle == 1))
+  {
+    d = upleft;
+    ExtractCycle(dots, current - 1 - fx, uset, Cycles, fx, d); 
+  }
+  /*
+  // up diterction
+  else if ((Cycles.count(current - fx))
+    && (dots[current - fx].cycle == 1))                                        
+  { 
+    d = up;
+    ExtractCycle(dots, current - fx, uset, Cycles, fx, d);
+  }
+  */
+}
+
+void DownRight(Dots* dots, int current, unordered_set <int> &uset,
+             unordered_set <int> &Cycles, int fx, Directions d)
+{
+  /*
+  // up diterction
+  if ((Cycles.count(current - fx))
+    && (dots[current - fx].cycle == false))                                        
+  { 
+    d = up;
+    ExtractCycle(dots, current - fx, uset, Cycles, fx, d);
+  }
+  */
+  //up-right direction
+  if (  (Cycles.count(current + 1 - fx))
+    && (dots[current + 1 - fx].cycle == false))
+  {
+    d = upright;
+    ExtractCycle(dots, current + 1 - fx, uset, Cycles, fx, d);
+  }
+  // right direction
+  else if ((Cycles.count(current + 1))
+    && (dots[current + 1].cycle == false))
+  {                  
+    d = right;
+    ExtractCycle(dots, current + 1, uset, Cycles, fx, d);
+  }
+  //down-right direction  
+  else if ((Cycles.count(current + 1 + fx))
+    && (dots[current + 1 + fx].cycle == false))   
+  {
+    d = downright;
+    ExtractCycle(dots, current + 1 + fx, uset, Cycles, fx, d);  
+  }
+  // down direction
+  else if ((Cycles.count(current + fx))
+    && (dots[current + fx].cycle == false))
+  { 
+    d = down;
+    ExtractCycle(dots, current + fx, uset, Cycles, fx, d);
+  }
+  //down-left direction
+  else if ((Cycles.count(current - 1 + fx))
+    && (dots[current - 1 + fx].cycle == false))
+  { 
+    d = downleft;
+    ExtractCycle(dots, current - 1 + fx, uset, Cycles, fx, d); 
+  }
+  // left direction
+  else if ((Cycles.count(current - 1))
+    && (dots[current - 1].cycle == false))
+  {  
+    d = left;
+    ExtractCycle(dots, current - 1, uset, Cycles, fx, d);  
+  }
+  /*
+  //up-left direction 
+  else if ((Cycles.count(current - 1 - fx))
+    && (dots[current - 1 - fx].cycle == false))
+  {
+    d = upleft;
+    ExtractCycle(dots, current - 1 - fx, uset, Cycles, fx, d); 
+  }
+  */
+  /*   
+  // up diterction
+  else if ((Cycles.count(current - fx))
+    && (dots[current - fx].cycle == 1))                                        
+  { 
+    d = up;
+    ExtractCycle(dots, current - fx, uset, Cycles, fx, d);
+  }
+  */
+  //up-right direction
+  else if (  (Cycles.count(current + 1 - fx))
+    && (dots[current + 1 - fx].cycle == 1))
+  {
+    d = upright;
+    ExtractCycle(dots, current + 1 - fx, uset, Cycles, fx, d);
+  }
+  // right direction
+  else if ((Cycles.count(current + 1))
+    && (dots[current + 1].cycle == 1))
+  {                  
+    d = right;
+    ExtractCycle(dots, current + 1, uset, Cycles, fx, d);
+  }
+  //down-right direction  
+  else if ((Cycles.count(current + 1 + fx))
+    && (dots[current + 1 + fx].cycle == 1))   
+  {
+    d = downright;
+    ExtractCycle(dots, current + 1 + fx, uset, Cycles, fx, d);  
+  }
+  // down direction
+  else if ((Cycles.count(current + fx))
+    && (dots[current + fx].cycle == 1))
+  { 
+    d = down;
+    ExtractCycle(dots, current + fx, uset, Cycles, fx, d);
+  }
+  //down-left direction
+  else if ((Cycles.count(current - 1 + fx))
+    && (dots[current - 1 + fx].cycle == 1))
+  { 
+    d = downleft;
+    ExtractCycle(dots, current - 1 + fx, uset, Cycles, fx, d); 
+  }
+  // left direction
+  else if ((Cycles.count(current - 1))
+    && (dots[current - 1].cycle == 1))
+  {  
+    d = left;
+    ExtractCycle(dots, current - 1, uset, Cycles, fx, d);  
+  }
+  /*
+  //up-left direction 
+  else if ((Cycles.count(current - 1 - fx))
+    && (dots[current - 1 - fx].cycle == 1))
+  {
+    d = upleft;
+    ExtractCycle(dots, current - 1 - fx, uset, Cycles, fx, d); 
+  }
+  */
+}
+
+void Right(Dots* dots, int current, unordered_set <int> &uset,
+             unordered_set <int> &Cycles, int fx, Directions d)
+{
+  /*
+  //up-left direction 
+  if ((Cycles.count(current - 1 - fx))
+    && (dots[current - 1 - fx].cycle == false))
+  {
+    d = upleft;
+    ExtractCycle(dots, current - 1 - fx, uset, Cycles, fx, d); 
+  }
+  */
+  // up diterction
+  if ((Cycles.count(current - fx))
+    && (dots[current - fx].cycle == false))                                        
+  { 
+    d = up;
+    ExtractCycle(dots, current - fx, uset, Cycles, fx, d);
+  }
+  //up-right direction
+  else if (  (Cycles.count(current + 1 - fx))
+    && (dots[current + 1 - fx].cycle == false))
+  {
+    d = upright;
+    ExtractCycle(dots, current + 1 - fx, uset, Cycles, fx, d);
+  }
+  // right direction
+  else if ((Cycles.count(current + 1))
+    && (dots[current + 1].cycle == false))
+  {                  
+    d = right;
+    ExtractCycle(dots, current + 1, uset, Cycles, fx, d);
+  }
+  //down-right direction  
+  else if ((Cycles.count(current + 1 + fx))
+    && (dots[current + 1 + fx].cycle == false))   
+  {
+    d = downright;
+    ExtractCycle(dots, current + 1 + fx, uset, Cycles, fx, d);  
+  }
+  // down direction
+  else if ((Cycles.count(current + fx))
+    && (dots[current + fx].cycle == false))
+  { 
+    d = down;
+    ExtractCycle(dots, current + fx, uset, Cycles, fx, d);
+  }
+  //down-left direction
+  else if ((Cycles.count(current - 1 + fx))
+    && (dots[current - 1 + fx].cycle == false))
+  { 
+    d = downleft;
+    ExtractCycle(dots, current - 1 + fx, uset, Cycles, fx, d); 
+  }
+  /*
+  // left direction
+  else if ((Cycles.count(current - 1))
+    && (dots[current - 1].cycle == false))
+  {  
+    d = left;
+    ExtractCycle(dots, current - 1, uset, Cycles, fx, d);  
+  }
+  */
+  /*   
+  //up-left direction 
+  else if ((Cycles.count(current - 1 - fx))
+    && (dots[current - 1 - fx].cycle == 1))
+  {
+    d = upleft;
+    ExtractCycle(dots, current - 1 - fx, uset, Cycles, fx, d); 
+  } 
+  */  
+  // up diterction
+  else if ((Cycles.count(current - fx))
+    && (dots[current - fx].cycle == 1))                                        
+  { 
+    d = up;
+    ExtractCycle(dots, current - fx, uset, Cycles, fx, d);
+  }
+  //up-right direction
+  else if (  (Cycles.count(current + 1 - fx))
+    && (dots[current + 1 - fx].cycle == 1))
+  {
+    d = upright;
+    ExtractCycle(dots, current + 1 - fx, uset, Cycles, fx, d);
+  }
+  // right direction
+  else if ((Cycles.count(current + 1))
+    && (dots[current + 1].cycle == 1))
+  {                  
+    d = right;
+    ExtractCycle(dots, current + 1, uset, Cycles, fx, d);
+  }
+  //down-right direction  
+  else if ((Cycles.count(current + 1 + fx))
+    && (dots[current + 1 + fx].cycle == 1))   
+  {
+    d = downright;
+    ExtractCycle(dots, current + 1 + fx, uset, Cycles, fx, d);  
+  }
+  // down direction
+  else if ((Cycles.count(current + fx))
+    && (dots[current + fx].cycle == 1))
+  { 
+    d = down;
+    ExtractCycle(dots, current + fx, uset, Cycles, fx, d);
+  }
+  //down-left direction
+  else if ((Cycles.count(current - 1 + fx))
+    && (dots[current - 1 + fx].cycle == 1))
+  { 
+    d = downleft;
+    ExtractCycle(dots, current - 1 + fx, uset, Cycles, fx, d); 
+  }
+  /*
+  // left direction
+  else if ((Cycles.count(current - 1))
+    && (dots[current - 1].cycle == 1))
+  {  
+    d = left;
+    ExtractCycle(dots, current - 1, uset, Cycles, fx, d);  
+  }
+  */
+
+}
+
+void UpRight(Dots* dots, int current, unordered_set <int> &uset,
+             unordered_set <int> &Cycles, int fx, Directions d)
+{
+  /*
+  // left direction
+  if ((Cycles.count(current - 1))
+    && (dots[current - 1].cycle == false))
+  {  
+    d = left;
+    ExtractCycle(dots, current - 1, uset, Cycles, fx, d);  
+  }
+  */
+  //up-left direction 
+  if ((Cycles.count(current - 1 - fx))
+    && (dots[current - 1 - fx].cycle == false))
+  {
+    d = upleft;
+    ExtractCycle(dots, current - 1 - fx, uset, Cycles, fx, d); 
+  }
+  // up diterction
+  else if ((Cycles.count(current - fx))
+    && (dots[current - fx].cycle == false))                                        
+  { 
+    d = up;
+    ExtractCycle(dots, current - fx, uset, Cycles, fx, d);
+  }
+  //up-right direction
+  else if (  (Cycles.count(current + 1 - fx))
+    && (dots[current + 1 - fx].cycle == false))
+  {
+    d = upright;
+    ExtractCycle(dots, current + 1 - fx, uset, Cycles, fx, d);
+  }
+  // right direction
+  else if ((Cycles.count(current + 1))
+    && (dots[current + 1].cycle == false))
+  {                  
+    d = right;
+    ExtractCycle(dots, current + 1, uset, Cycles, fx, d);
+  }
+  //down-right direction  
+  else if ((Cycles.count(current + 1 + fx))
+    && (dots[current + 1 + fx].cycle == false))   
+  {
+    d = downright;
+    ExtractCycle(dots, current + 1 + fx, uset, Cycles, fx, d);  
+  }
+  // down direction
+  else if ((Cycles.count(current + fx))
+    && (dots[current + fx].cycle == false))
+  { 
+    d = down;
+    ExtractCycle(dots, current + fx, uset, Cycles, fx, d);
+  }
+
+  /* 
+  // left direction
+  else if ((Cycles.count(current - 1))
+    && (dots[current - 1].cycle == 1))
+  {  
+    d = left;
+    ExtractCycle(dots, current - 1, uset, Cycles, fx, d);  
+  } 
+  */  
+  //up-left direction 
+  else if ((Cycles.count(current - 1 - fx))
+    && (dots[current - 1 - fx].cycle == 1))
+  {
+    d = upleft;
+    ExtractCycle(dots, current - 1 - fx, uset, Cycles, fx, d); 
+  }   
+  // up diterction
+  else if ((Cycles.count(current - fx))
+    && (dots[current - fx].cycle == 1))                                        
+  { 
+    d = up;
+    ExtractCycle(dots, current - fx, uset, Cycles, fx, d);
+  }
+  //up-right direction
+  else if (  (Cycles.count(current + 1 - fx))
+    && (dots[current + 1 - fx].cycle == 1))
+  {
+    d = upright;
+    ExtractCycle(dots, current + 1 - fx, uset, Cycles, fx, d);
+  }
+  // right direction
+  else if ((Cycles.count(current + 1))
+    && (dots[current + 1].cycle == 1))
+  {                  
+    d = right;
+    ExtractCycle(dots, current + 1, uset, Cycles, fx, d);
+  }
+  //down-right direction  
+  else if ((Cycles.count(current + 1 + fx))
+    && (dots[current + 1 + fx].cycle == 1))   
+  {
+    d = downright;
+    ExtractCycle(dots, current + 1 + fx, uset, Cycles, fx, d);  
+  }
+  // down direction
+  else if ((Cycles.count(current + fx))
+    && (dots[current + fx].cycle == 1))
+  { 
+    d = down;
+    ExtractCycle(dots, current + fx, uset, Cycles, fx, d);
+  }
+  /*
+  //down-left direction
+  else if ((Cycles.count(current - 1 + fx))
+    && (dots[current - 1 + fx].cycle == 1))
+  { 
+    d = downleft;
+    ExtractCycle(dots, current - 1 + fx, uset, Cycles, fx, d); 
+  }
+  */
+}
+
+void Up(Dots* dots, int current, unordered_set <int> &uset,
+             unordered_set <int> &Cycles, int fx, Directions d)
+{
+  /*
+  //down-left direction
+  if ((Cycles.count(current - 1 + fx))
+    && (dots[current - 1 + fx].cycle == false))
+  { 
+    d = downleft;
+    ExtractCycle(dots, current - 1 + fx, uset, Cycles, fx, d); 
+  }
+  */
+  // left direction
+  if ((Cycles.count(current - 1))
+    && (dots[current - 1].cycle == false))
+  {  
+    d = left;
+    ExtractCycle(dots, current - 1, uset, Cycles, fx, d);  
+  }
+  //up-left direction 
+  else if ((Cycles.count(current - 1 - fx))
+    && (dots[current - 1 - fx].cycle == false))
+  {
+    d = upleft;
+    ExtractCycle(dots, current - 1 - fx, uset, Cycles, fx, d); 
+  }
+  // up diterction
+  else if ((Cycles.count(current - fx))
+    && (dots[current - fx].cycle == false))                                        
+  { 
+    d = up;
+    ExtractCycle(dots, current - fx, uset, Cycles, fx, d);
+  }
+  //up-right direction
+  else if (  (Cycles.count(current + 1 - fx))
+    && (dots[current + 1 - fx].cycle == false))
+  {
+    d = upright;
+    ExtractCycle(dots, current + 1 - fx, uset, Cycles, fx, d);
+  }
+  // right direction
+  else if ((Cycles.count(current + 1))
+    && (dots[current + 1].cycle == false))
+  {                  
+    d = right;
+    ExtractCycle(dots, current + 1, uset, Cycles, fx, d);
+  }
+  //down-right direction  
+  else if ((Cycles.count(current + 1 + fx))
+    && (dots[current + 1 + fx].cycle == false))   
+  {
+    d = downright;
+    ExtractCycle(dots, current + 1 + fx, uset, Cycles, fx, d);  
+  }
+  /*
+  // down direction
+  else if ((Cycles.count(current + fx))
+    && (dots[current + fx].cycle == false))
+  { 
+    d = down;
+    ExtractCycle(dots, current + fx, uset, Cycles, fx, d);
+  }
+  */
+  /*
+  //down-left direction
+  else if ((Cycles.count(current - 1 + fx))
+    && (dots[current - 1 + fx].cycle == 1))
+  { 
+    d = downleft;
+    ExtractCycle(dots, current - 1 + fx, uset, Cycles, fx, d); 
+  } 
+  */
+  // left direction
+  else if ((Cycles.count(current - 1))
+    && (dots[current - 1].cycle == 1))
+  {  
+    d = left;
+    ExtractCycle(dots, current - 1, uset, Cycles, fx, d);  
+  }   
+  //up-left direction 
+  else if ((Cycles.count(current - 1 - fx))
+    && (dots[current - 1 - fx].cycle == 1))
+  {
+    d = upleft;
+    ExtractCycle(dots, current - 1 - fx, uset, Cycles, fx, d); 
+  }   
+  // up diterction
+  else if ((Cycles.count(current - fx))
+    && (dots[current - fx].cycle == 1))                                        
+  { 
+    d = up;
+    ExtractCycle(dots, current - fx, uset, Cycles, fx, d);
+  }
+  //up-right direction
+  else if (  (Cycles.count(current + 1 - fx))
+    && (dots[current + 1 - fx].cycle == 1))
+  {
+    d = upright;
+    ExtractCycle(dots, current + 1 - fx, uset, Cycles, fx, d);
+  }
+  // right direction
+  else if ((Cycles.count(current + 1))
+    && (dots[current + 1].cycle == 1))
+  {                  
+    d = right;
+    ExtractCycle(dots, current + 1, uset, Cycles, fx, d);
+  }
+  //down-right direction  
+  else if ((Cycles.count(current + 1 + fx))
+    && (dots[current + 1 + fx].cycle == 1))   
+  {
+    d = downright;
+    ExtractCycle(dots, current + 1 + fx, uset, Cycles, fx, d);  
+  }
+  /*
+  // down direction
+  else if ((Cycles.count(current + fx))
+    && (dots[current + fx].cycle == 1))
+  { 
+    d = down;
+    ExtractCycle(dots, current + fx, uset, Cycles, fx, d);
+  }
+  */
+}
+
+
+void UpLeft(Dots* dots, int current, unordered_set <int> &uset,
+             unordered_set <int> &Cycles, int fx, Directions d)
+{
+  /*
+  // down direction
+  if ((Cycles.count(current + fx))
+    && (dots[current + fx].cycle == false))
+  { 
+    d = down;
+    ExtractCycle(dots, current + fx, uset, Cycles, fx, d);
+  }
+  */
+  //down-left direction
+  if ((Cycles.count(current - 1 + fx))
+    && (dots[current - 1 + fx].cycle == false))
+  { 
+    d = downleft;
+    ExtractCycle(dots, current - 1 + fx, uset, Cycles, fx, d); 
+  }
+  // left direction
+  else if ((Cycles.count(current - 1))
+    && (dots[current - 1].cycle == false))
+  {  
+    d = left;
+    ExtractCycle(dots, current - 1, uset, Cycles, fx, d);  
+  }
+  //up-left direction 
+  else if ((Cycles.count(current - 1 - fx))
+    && (dots[current - 1 - fx].cycle == false))
+  {
+    d = upleft;
+    ExtractCycle(dots, current - 1 - fx, uset, Cycles, fx, d); 
+  }
+  // up diterction
+  else if ((Cycles.count(current - fx))
+    && (dots[current - fx].cycle == false))                                        
+  { 
+    d = up;
+    ExtractCycle(dots, current - fx, uset, Cycles, fx, d);
+  }
+  //up-right direction
+  else if (  (Cycles.count(current + 1 - fx))
+    && (dots[current + 1 - fx].cycle == false))
+  {
+    d = upright;
+    ExtractCycle(dots, current + 1 - fx, uset, Cycles, fx, d);
+  }
+  // right direction
+  else if ((Cycles.count(current + 1))
+    && (dots[current + 1].cycle == false))
+  {                  
+    d = right;
+    ExtractCycle(dots, current + 1, uset, Cycles, fx, d);
+  }
+  /*
+  //down-right direction  
+  else if ((Cycles.count(current + 1 + fx))
+    && (dots[current + 1 + fx].cycle == false))   
+  {
+    d = downright;
+    ExtractCycle(dots, current + 1 + fx, uset, Cycles, fx, d);  
+  }
+  */
+  
+  /*
+  // down direction
+  else if ((Cycles.count(current + fx))
+    && (dots[current + fx].cycle == 1))
+  { 
+    d = down;
+    ExtractCycle(dots, current + fx, uset, Cycles, fx, d);
+  }
+  */
+  //down-left direction
+  else if ((Cycles.count(current - 1 + fx))
+    && (dots[current - 1 + fx].cycle == 1))
+  { 
+    d = downleft;
+    ExtractCycle(dots, current - 1 + fx, uset, Cycles, fx, d); 
+  } 
+  // left direction
+  else if ((Cycles.count(current - 1))
+    && (dots[current - 1].cycle == 1))
+  {  
+    d = left;
+    ExtractCycle(dots, current - 1, uset, Cycles, fx, d);  
+  }   
+  //up-left direction 
+  else if ((Cycles.count(current - 1 - fx))
+    && (dots[current - 1 - fx].cycle == 1))
+  {
+    d = upleft;
+    ExtractCycle(dots, current - 1 - fx, uset, Cycles, fx, d); 
+  }   
+  // up diterction
+  else if ((Cycles.count(current - fx))
+    && (dots[current - fx].cycle == 1))                                        
+  { 
+    d = up;
+    ExtractCycle(dots, current - fx, uset, Cycles, fx, d);
+  }
+  //up-right direction
+  else if (  (Cycles.count(current + 1 - fx))
+    && (dots[current + 1 - fx].cycle == 1))
+  {
+    d = upright;
+    ExtractCycle(dots, current + 1 - fx, uset, Cycles, fx, d);
+  }
+  // right direction
+  else if ((Cycles.count(current + 1))
+    && (dots[current + 1].cycle == 1))
+  {                  
+    d = right;
+    ExtractCycle(dots, current + 1, uset, Cycles, fx, d);
+  }
+  /*
+  //down-right direction  
+  else if ((Cycles.count(current + 1 + fx))
+    && (dots[current + 1 + fx].cycle == 1))   
+  {
+    d = downright;
+    ExtractCycle(dots, current + 1 + fx, uset, Cycles, fx, d);  
+  }
+  */
+}
+
+void Left(Dots* dots, int current, unordered_set <int> &uset,
+             unordered_set <int> &Cycles, int fx, Directions d)
+{
+  /*
+  //down-right direction  
+  if ((Cycles.count(current + 1 + fx))
+    && (dots[current + 1 + fx].cycle == false))   
+  {
+    d = downright;
+    ExtractCycle(dots, current + 1 + fx, uset, Cycles, fx, d);  
+  }
+  */
+  // down direction
+  if ((Cycles.count(current + fx))
+    && (dots[current + fx].cycle == false))
+  { 
+    d = down;
+    ExtractCycle(dots, current + fx, uset, Cycles, fx, d);
+  }
+  //down-left direction
+  else if ((Cycles.count(current - 1 + fx))
+    && (dots[current - 1 + fx].cycle == false))
+  { 
+    d = downleft;
+    ExtractCycle(dots, current - 1 + fx, uset, Cycles, fx, d); 
+  }
+  // left direction
+  else if ((Cycles.count(current - 1))
+    && (dots[current - 1].cycle == false))
+  {  
+    d = left;
+    ExtractCycle(dots, current - 1, uset, Cycles, fx, d);  
+  }
+  //up-left direction 
+  else if ((Cycles.count(current - 1 - fx))
+    && (dots[current - 1 - fx].cycle == false))
+  {
+    d = upleft;
+    ExtractCycle(dots, current - 1 - fx, uset, Cycles, fx, d); 
+  }
+  // up diterction
+  else if ((Cycles.count(current - fx))
+    && (dots[current - fx].cycle == false))                                        
+  { 
+    d = up;
+    ExtractCycle(dots, current - fx, uset, Cycles, fx, d);
+  }
+  //up-right direction
+  else if (  (Cycles.count(current + 1 - fx))
+    && (dots[current + 1 - fx].cycle == false))
+  {
+    d = upright;
+    ExtractCycle(dots, current + 1 - fx, uset, Cycles, fx, d);
+  }
+  /*
+  // right direction
+  else if ((Cycles.count(current + 1))
+    && (dots[current + 1].cycle == false))
+  {                  
+    d = right;
+    ExtractCycle(dots, current + 1, uset, Cycles, fx, d);
+  }
+  */
+  /*
+  //down-right direction  
+  else if ((Cycles.count(current + 1 + fx))
+    && (dots[current + 1 + fx].cycle == 1))   
+  {
+    d = downright;
+    ExtractCycle(dots, current + 1 + fx, uset, Cycles, fx, d);  
+  }
+  */
+  // down direction
+  else if ((Cycles.count(current + fx))
+    && (dots[current + fx].cycle == 1))
+  { 
+    d = down;
+    ExtractCycle(dots, current + fx, uset, Cycles, fx, d);
+  }
+  //down-left direction
+  else if ((Cycles.count(current - 1 + fx))
+    && (dots[current - 1 + fx].cycle == 1))
+  { 
+    d = downleft;
+    ExtractCycle(dots, current - 1 + fx, uset, Cycles, fx, d); 
+  } 
+  // left direction
+  else if ((Cycles.count(current - 1))
+    && (dots[current - 1].cycle == 1))
+  {  
+    d = left;
+    ExtractCycle(dots, current - 1, uset, Cycles, fx, d);  
+  }   
+  //up-left direction 
+  else if ((Cycles.count(current - 1 - fx))
+    && (dots[current - 1 - fx].cycle == 1))
+  {
+    d = upleft;
+    ExtractCycle(dots, current - 1 - fx, uset, Cycles, fx, d); 
+  }   
+  // up diterction
+  else if ((Cycles.count(current - fx))
+    && (dots[current - fx].cycle == 1))                                        
+  { 
+    d = up;
+    ExtractCycle(dots, current - fx, uset, Cycles, fx, d);
+  }
+  //up-right direction
+  else if (  (Cycles.count(current + 1 - fx))
+    && (dots[current + 1 - fx].cycle == 1))
+  {
+    d = upright;
+    ExtractCycle(dots, current + 1 - fx, uset, Cycles, fx, d);
+  }
+  /*
+  // right direction
+  else if ((Cycles.count(current + 1))
+    && (dots[current + 1].cycle == 1))
+  {                  
+    d = right;
+    ExtractCycle(dots, current + 1, uset, Cycles, fx, d);
+  }
+  */
+}
+
+void DownLeft(Dots* dots, int current, unordered_set <int> &uset,
+             unordered_set <int> &Cycles, int fx, Directions d)
+{
+  /*
+  // right direction
+  if ((Cycles.count(current + 1))
+    && (dots[current + 1].cycle == false))
+  {                  
+    d = right;
+    ExtractCycle(dots, current + 1, uset, Cycles, fx, d);
+  }
+  */
+  //down-right direction  
+  if ((Cycles.count(current + 1 + fx))
+    && (dots[current + 1 + fx].cycle == false))   
+  {
+    d = downright;
+    ExtractCycle(dots, current + 1 + fx, uset, Cycles, fx, d);  
+  }
+  // down direction
+  else if ((Cycles.count(current + fx))
+    && (dots[current + fx].cycle == false))
+  { 
+    d = down;
+    ExtractCycle(dots, current + fx, uset, Cycles, fx, d);
+  }
+  //down-left direction
+  else if ((Cycles.count(current - 1 + fx))
+    && (dots[current - 1 + fx].cycle == false))
+  { 
+    d = downleft;
+    ExtractCycle(dots, current - 1 + fx, uset, Cycles, fx, d); 
+  }
+  // left direction
+  else if ((Cycles.count(current - 1))
+    && (dots[current - 1].cycle == false))
+  {  
+    d = left;
+    ExtractCycle(dots, current - 1, uset, Cycles, fx, d);  
+  }
+  //up-left direction 
+  else if ((Cycles.count(current - 1 - fx))
+    && (dots[current - 1 - fx].cycle == false))
+  {
+    d = upleft;
+    ExtractCycle(dots, current - 1 - fx, uset, Cycles, fx, d); 
+  }
+  // up diterction
+  else if ((Cycles.count(current - fx))
+    && (dots[current - fx].cycle == false))                                        
+  { 
+    d = up;
+    ExtractCycle(dots, current - fx, uset, Cycles, fx, d);
+  }
+  /*
+  //up-right direction
+  else if (  (Cycles.count(current + 1 - fx))
+    && (dots[current + 1 - fx].cycle == false))
+  {
+    d = upright;
+    ExtractCycle(dots, current + 1 - fx, uset, Cycles, fx, d);
+  }
+  */
+  /*
+  // right direction
+  else if ((Cycles.count(current + 1))
+    && (dots[current + 1].cycle == 1))
+  {                  
+    d = right;
+    ExtractCycle(dots, current + 1, uset, Cycles, fx, d);
+  }
+  */
+  //down-right direction  
+  else if ((Cycles.count(current + 1 + fx))
+    && (dots[current + 1 + fx].cycle == 1))   
+  {
+    d = downright;
+    ExtractCycle(dots, current + 1 + fx, uset, Cycles, fx, d);  
+  }
+  // down direction
+  else if ((Cycles.count(current + fx))
+    && (dots[current + fx].cycle == 1))
+  { 
+    d = down;
+    ExtractCycle(dots, current + fx, uset, Cycles, fx, d);
+  }
+  //down-left direction
+  else if ((Cycles.count(current - 1 + fx))
+    && (dots[current - 1 + fx].cycle == 1))
+  { 
+    d = downleft;
+    ExtractCycle(dots, current - 1 + fx, uset, Cycles, fx, d); 
+  } 
+  // left direction
+  else if ((Cycles.count(current - 1))
+    && (dots[current - 1].cycle == 1))
+  {  
+    d = left;
+    ExtractCycle(dots, current - 1, uset, Cycles, fx, d);  
+  }   
+  //up-left direction 
+  else if ((Cycles.count(current - 1 - fx))
+    && (dots[current - 1 - fx].cycle == 1))
+  {
+    d = upleft;
+    ExtractCycle(dots, current - 1 - fx, uset, Cycles, fx, d); 
+  }   
+  // up diterction
+  else if ((Cycles.count(current - fx))
+    && (dots[current - fx].cycle == 1))                                        
+  { 
+    d = up;
+    ExtractCycle(dots, current - fx, uset, Cycles, fx, d);
+  }
+  /*
+  //up-right direction
+  else if (  (Cycles.count(current + 1 - fx))
+    && (dots[current + 1 - fx].cycle == 1))
+  {
+    d = upright;
+    ExtractCycle(dots, current + 1 - fx, uset, Cycles, fx, d);
+  }
+  */
+} 
+
+void ExtractCycle (Dots* dots, int current, unordered_set <int> &uset,
+             unordered_set <int> &Cycles, int fx, Directions d)
+{
+  dots[current].cycle += 1;
+
+  if (dots[current].cycle == 2)
+    return;
+
+  uset.insert(current);
+
+  switch (d)
+  {
+    case (down):
+      Down(dots, current,  uset, Cycles, fx, d);
+      break;
+    case (downright):
+      DownRight(dots, current,  uset, Cycles, fx, d);
+      break;
+    case (right):
+      Right(dots, current,  uset, Cycles, fx, d);
+      break;
+    case (upright):
+      UpRight(dots, current,  uset, Cycles, fx, d);
+      break;
+    case (up):
+      Up(dots, current,  uset, Cycles, fx, d);
+      break;
+    case (upleft):
+      UpLeft(dots, current,  uset, Cycles, fx, d);
+      break;
+    case (left):
+      Left(dots, current,  uset, Cycles, fx, d);
+      break;
+    case (downleft):
+      DownLeft(dots, current,  uset, Cycles, fx, d);
+      break;
+  }
+
 }
 
 int DifferentWaysUset
@@ -323,6 +1287,7 @@ ColorSpace CreateColorSpace(unordered_set <int> CycleSet, Dots* dots, int fx)
 
 void ColorColorSpace (unordered_set <int> CycleSet, Dots* dots, int fx)
 {
+  cout << "Colored start\n" << endl;
   vector <int> CycleVector;
   for (auto i = CycleSet.begin(); i != CycleSet.end(); i++)
     CycleVector.push_back(*i);
@@ -428,31 +1393,41 @@ list <ColorSpace> ProcessDotInteraction (Dots* dots, int fx, int fy)
     unordered_set <int> ConnectedCycles;
     FindConnectedDots(dots, current, ConnectedCycles, fx, fy);
     DeleteBranchesUset(dots, ConnectedCycles, fx, fy);
-    //cout << "Connected cycles size = "  << ConnectedCycles.size()  << endl;
+    cout << "Connected cycles size = "  << ConnectedCycles.size()  << endl;
 
-    while ((ConnectedCycles.size() != 0))
+    while ((ConnectedCycles.size() > 0))
     { 
       for (auto i = ConnectedCycles.begin(); i != ConnectedCycles.end(); i++)
         dots[*i].cycle = false;
 
       unordered_set <int> Cycle;
       int start = Min(ConnectedCycles);
-      ExtractCycle(dots, start, Cycle, fx, fy);
-      cout << "Cycle size = " << Cycle.size() << endl;
-      start = Min(Cycle);
+      ExtractCycle(dots, start, Cycle, ConnectedCycles, fx, down);
+
       DeleteBranchesUset(dots, Cycle, fx, fy);
       cout << "Cycle size = " << Cycle.size() << endl;
-
+      
       if (CheckForColor(Cycle, dots, fx))
       {
         ColorSpace CS = CreateColorSpace(Cycle, dots, fx);
         result.push_back(CS);  
       }
-      
-      DeleteBranchesUset(dots, ConnectedCycles, fx, fy);
+
       ConnectedCycles -= Cycle;
-      cout << "Connected cycles size = " << ConnectedCycles.size() << endl;
+
+      for (auto i = Cycle.begin(); i != Cycle.end(); i++)
+      {
+        if (dots[*i].cycle == 2)
+        {
+          ConnectedCycles.insert(*i);
+          break;
+        }
+      }
+
+      DeleteBranchesUset(dots, ConnectedCycles, fx, fy);
+
     }
+
   }
   return result;
 }
