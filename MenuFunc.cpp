@@ -116,8 +116,6 @@ void FindConnectedDots (Dots* dots, int current, unordered_set <int> &uset,
 }
 
 
-
-
 enum Directions {up, upright, right, downright, down, downleft, left, upleft};
 
 void ExtractCycle (Dots* dots, int current, unordered_set <int> &uset,
@@ -176,6 +174,7 @@ void Down(Dots* dots, int current, unordered_set <int> &uset,
     d = upleft;
     ExtractCycle(dots, current - 1 - fx, uset, Cycles, fx, d); 
   } 
+  /*
   // up diterction
   else if ((Cycles.count(current - fx))
     && (dots[current - fx].cycle == false))                                        
@@ -183,7 +182,7 @@ void Down(Dots* dots, int current, unordered_set <int> &uset,
     d = up;
     ExtractCycle(dots, current - fx, uset, Cycles, fx, d);
   }
-  
+  */
  
   //up-right direction
   else if (  (Cycles.count(current + 1 - fx))
@@ -234,6 +233,7 @@ void Down(Dots* dots, int current, unordered_set <int> &uset,
     d = upleft;
     ExtractCycle(dots, current - 1 - fx, uset, Cycles, fx, d); 
   }
+  /*
   // up diterction
   else if ((Cycles.count(current - fx))
     && (dots[current - fx].cycle == 1))                                        
@@ -241,6 +241,7 @@ void Down(Dots* dots, int current, unordered_set <int> &uset,
     d = up;
     ExtractCycle(dots, current - fx, uset, Cycles, fx, d);
   }
+  */
 }
 
 void DownRight(Dots* dots, int current, unordered_set <int> &uset,
@@ -296,13 +297,14 @@ void DownRight(Dots* dots, int current, unordered_set <int> &uset,
     d = left;
     ExtractCycle(dots, current - 1, uset, Cycles, fx, d);  
   }
+  /*
   //up-left direction 
   else if ((Cycles.count(current - 1 - fx))
     && (dots[current - 1 - fx].cycle == false))
   {
     d = upleft;
     ExtractCycle(dots, current - 1 - fx, uset, Cycles, fx, d); 
-  }
+  }*/
  
   // up diterction
   else if ((Cycles.count(current - fx))
@@ -355,6 +357,7 @@ void DownRight(Dots* dots, int current, unordered_set <int> &uset,
     ExtractCycle(dots, current - 1, uset, Cycles, fx, d);  
   }
 
+  /*
   //up-left direction 
   else if ((Cycles.count(current - 1 - fx))
     && (dots[current - 1 - fx].cycle == 1))
@@ -362,6 +365,7 @@ void DownRight(Dots* dots, int current, unordered_set <int> &uset,
     d = upleft;
     ExtractCycle(dots, current - 1 - fx, uset, Cycles, fx, d); 
   }
+  */
 }
 
 void Right(Dots* dots, int current, unordered_set <int> &uset,
@@ -417,14 +421,14 @@ void Right(Dots* dots, int current, unordered_set <int> &uset,
     d = downleft;
     ExtractCycle(dots, current - 1 + fx, uset, Cycles, fx, d); 
   }
-  
+  /*
   // left direction
   else if ((Cycles.count(current - 1))
     && (dots[current - 1].cycle == false))
   {  
     d = left;
     ExtractCycle(dots, current - 1, uset, Cycles, fx, d);  
-  } 
+  } */
   //up-left direction 
   else if ((Cycles.count(current - 1 - fx))
     && (dots[current - 1 - fx].cycle == 1))
@@ -476,13 +480,14 @@ void Right(Dots* dots, int current, unordered_set <int> &uset,
     ExtractCycle(dots, current - 1 + fx, uset, Cycles, fx, d); 
   }
 
+  /*
   // left direction
   else if ((Cycles.count(current - 1))
     && (dots[current - 1].cycle == 1))
   {  
     d = left;
     ExtractCycle(dots, current - 1, uset, Cycles, fx, d);  
-  }
+  }*/
   
 
 }
@@ -589,13 +594,14 @@ void UpRight(Dots* dots, int current, unordered_set <int> &uset,
     d = down;
     ExtractCycle(dots, current + fx, uset, Cycles, fx, d);
   }
+  /*
   //down-left direction
   else if ((Cycles.count(current - 1 + fx))
     && (dots[current - 1 + fx].cycle == 1))
   { 
     d = downleft;
     ExtractCycle(dots, current - 1 + fx, uset, Cycles, fx, d); 
-  }
+  }*/
 
 }
 
@@ -652,14 +658,14 @@ void Up(Dots* dots, int current, unordered_set <int> &uset,
     d = downright;
     ExtractCycle(dots, current + 1 + fx, uset, Cycles, fx, d);  
   }
-  
+  /*
   // down direction
   else if ((Cycles.count(current + fx))
     && (dots[current + fx].cycle == false))
   { 
     d = down;
     ExtractCycle(dots, current + fx, uset, Cycles, fx, d);
-  }
+  }*/
   //down-left direction
   else if ((Cycles.count(current - 1 + fx))
     && (dots[current - 1 + fx].cycle == 1))
@@ -709,13 +715,14 @@ void Up(Dots* dots, int current, unordered_set <int> &uset,
     d = downright;
     ExtractCycle(dots, current + 1 + fx, uset, Cycles, fx, d);  
   }
+  /*
   // down direction
   else if ((Cycles.count(current + fx))
     && (dots[current + fx].cycle == 1))
   { 
     d = down;
     ExtractCycle(dots, current + fx, uset, Cycles, fx, d);
-  }
+  }*/
 }
 
 
@@ -773,14 +780,14 @@ void UpLeft(Dots* dots, int current, unordered_set <int> &uset,
     d = right;
     ExtractCycle(dots, current + 1, uset, Cycles, fx, d);
   }
-  
+  /*
   //down-right direction  
   else if ((Cycles.count(current + 1 + fx))
     && (dots[current + 1 + fx].cycle == false))   
   {
     d = downright;
     ExtractCycle(dots, current + 1 + fx, uset, Cycles, fx, d);  
-  }
+  }*/
   
   // down direction
   else if ((Cycles.count(current + fx))
@@ -831,13 +838,14 @@ void UpLeft(Dots* dots, int current, unordered_set <int> &uset,
     d = right;
     ExtractCycle(dots, current + 1, uset, Cycles, fx, d);
   }
+  /*
   //down-right direction  
   else if ((Cycles.count(current + 1 + fx))
     && (dots[current + 1 + fx].cycle == 1))   
   {
     d = downright;
     ExtractCycle(dots, current + 1 + fx, uset, Cycles, fx, d);  
-  }
+  }*/
 }
 
 void Left(Dots* dots, int current, unordered_set <int> &uset,
@@ -892,13 +900,14 @@ void Left(Dots* dots, int current, unordered_set <int> &uset,
     d = upright;
     ExtractCycle(dots, current + 1 - fx, uset, Cycles, fx, d);
   }
+  /*
   // right direction
   else if ((Cycles.count(current + 1))
     && (dots[current + 1].cycle == false))
   {                  
     d = right;
     ExtractCycle(dots, current + 1, uset, Cycles, fx, d);
-  }
+  }*/
   //down-right direction  
   else if ((Cycles.count(current + 1 + fx))
     && (dots[current + 1 + fx].cycle == 1))   
@@ -948,13 +957,14 @@ void Left(Dots* dots, int current, unordered_set <int> &uset,
     d = upright;
     ExtractCycle(dots, current + 1 - fx, uset, Cycles, fx, d);
   }
+  /*
   // right direction
   else if ((Cycles.count(current + 1))
     && (dots[current + 1].cycle == 1))
   {                  
     d = right;
     ExtractCycle(dots, current + 1, uset, Cycles, fx, d);
-  }
+  }*/
 }
 
 void DownLeft(Dots* dots, int current, unordered_set <int> &uset,
@@ -1009,13 +1019,14 @@ void DownLeft(Dots* dots, int current, unordered_set <int> &uset,
     d = up;
     ExtractCycle(dots, current - fx, uset, Cycles, fx, d);
   }
+  /*
   //up-right direction
   else if (  (Cycles.count(current + 1 - fx))
     && (dots[current + 1 - fx].cycle == false))
   {
     d = upright;
     ExtractCycle(dots, current + 1 - fx, uset, Cycles, fx, d);
-  }
+  }*/
   // right direction
   else if ((Cycles.count(current + 1))
     && (dots[current + 1].cycle == 1))
@@ -1065,13 +1076,14 @@ void DownLeft(Dots* dots, int current, unordered_set <int> &uset,
     d = up;
     ExtractCycle(dots, current - fx, uset, Cycles, fx, d);
   }
+  /*
   //up-right direction
   else if (  (Cycles.count(current + 1 - fx))
     && (dots[current + 1 - fx].cycle == 1))
   {
     d = upright;
     ExtractCycle(dots, current + 1 - fx, uset, Cycles, fx, d);
-  }
+  }*/
 } 
 
 void ExtractCycle (Dots* dots, int current, unordered_set <int> &uset,
@@ -1356,11 +1368,10 @@ list <ColorSpace> ProcessDotInteraction (Dots* dots, int fx, int fy)
       int start = Min(ConnectedCycles);
       ExtractCycle(dots, start, Cycle, ConnectedCycles, fx, down);
       DeleteBranchesUset(dots, Cycle, fx, fy);
-      cout << "Cycle size = " << Cycle.size() << endl;
-    
 
 
-       unordered_set <int> Cycle2;
+      cout << "Precycle size = " << Cycle.size() << endl;
+      unordered_set <int> Cycle2;
       for (auto i = Cycle.begin(); i != Cycle.end(); i++)
       {
         if (dots[*i].cycle == 2)
@@ -1371,7 +1382,9 @@ list <ColorSpace> ProcessDotInteraction (Dots* dots, int fx, int fy)
           break;
         }
       }
+      DeleteBranchesUset(dots, Cycle2, fx, fy);
       ConnectedCycles -= Cycle2;
+
 
       for (auto i = Cycle2.begin(); i != Cycle2.end(); i++)
       {
