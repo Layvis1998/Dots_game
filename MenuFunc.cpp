@@ -1393,7 +1393,11 @@ list <ColorSpace> ProcessDotInteraction (Dots* dots, int fx, int fy)
       ExtractCycle(dots, start, Cycle, ConnectedCycles, fx, d);
       DeleteBranchesUset(dots, Cycle, fx, fy);
 
-
+      if (Cycle.size() == 3)
+      {
+        ConnectedCycles -= Cycle;
+        continue;
+      }
       cout << "Precycle size = " << Cycle.size() << endl;
       unordered_set <int> Cycle2;
       for (auto i = Cycle.begin(); i != Cycle.end(); i++)
