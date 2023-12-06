@@ -1122,7 +1122,7 @@ void ExtractCycle (Dots* dots, int current, unordered_set <int> &uset,
   switch (d)
   {
     case (down):
-      Down(dots, current,  uset, Cycles, fx, d);
+      Down(dots, current, uset, Cycles, fx, d);
       break;
     case (downright):
       DownRight(dots, current,  uset, Cycles, fx, d);
@@ -1389,7 +1389,8 @@ list <ColorSpace> ProcessDotInteraction (Dots* dots, int fx, int fy)
 
       unordered_set <int> Cycle;
       int start = Min(ConnectedCycles);
-      ExtractCycle(dots, start, Cycle, ConnectedCycles, fx, down);
+      Directions d = down;
+      ExtractCycle(dots, start, Cycle, ConnectedCycles, fx, d);
       DeleteBranchesUset(dots, Cycle, fx, fy);
 
 
@@ -1399,9 +1400,27 @@ list <ColorSpace> ProcessDotInteraction (Dots* dots, int fx, int fy)
       {
         if (dots[*i].cycle == 2)
         {
-          for (auto i = ConnectedCycles.begin(); i != ConnectedCycles.end(); i++)
-            dots[*i].cycle = false;
-          ExtractCycle(dots, *i, Cycle2, ConnectedCycles, fx, down);
+          for (auto j = ConnectedCycles.begin(); j != ConnectedCycles.end(); j++)
+            dots[*j].cycle = false;
+
+          if (Cycle.count(*i - fx))
+            d = up;
+          else if (Cycle.count(*i - fx + 1))
+            d = upleft;
+          else if (Cycle.count(*i + 1))
+            d = left;
+          else if (Cycle.count(*i + fx + 1))
+            d = downleft;
+          else if (Cycle.count(*i + fx))
+            d = down;
+          else if (Cycle.count(*i + fx - 1))
+            d = downright;
+          else if (Cycle.count(*i - 1))
+            d = right;
+          else if (Cycle.count(*i - 1 - fx))
+            d = upright;                   
+
+          ExtractCycle(dots, *i, Cycle2, ConnectedCycles, fx, d);
           break;
         }
       }
