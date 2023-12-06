@@ -1,16 +1,9 @@
 #include <iostream>
-#include <err.h>
 #include <string>
-#include <queue>
-#include <climits>
-#include <unordered_set>
-#include <stack>
 #include <algorithm>
 #include <list>
 #include <SDL2/SDL.h>
 #include <SDL2/SDL_image.h>
-#include <SDL2/SDL_ttf.h>
-#include <set>
 #include <stdint.h>
 
 #include "../headers/Globcnst.h"
@@ -32,7 +25,6 @@ void MainMenu()
 
   Text_num* Textures = new Text_num [menu_x_field * menu_y_field];
   EnumerateField(menu_y_field, menu_x_field, my_Font, Textures);
-
   list <ColorSpace> Spaces;
 
   while (GameState == Menu)
@@ -91,10 +83,7 @@ void MainMenu()
 
     DrawFieldNumbers (menu_y_field, menu_x_field, my_Font, Textures);
     DrawField(menu_x_field, menu_y_field);
-    Spaces = ProcessDotInteraction(dots, menu_x_field, menu_y_field);
-
-    for (auto i = Spaces.begin(); i != Spaces.end(); i++ )
-      ColorColorSpace(i->BorderDots, dots, menu_x_field);
+    Spaces = ProcessDotInteraction(dots, menu_x_field, menu_y_field);   
 
     DrawDots(dots, menu_x_field * menu_y_field, menu_x_field);
     CheckPositionInField(menu_x_field, menu_y_field);

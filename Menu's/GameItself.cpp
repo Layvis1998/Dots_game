@@ -1,16 +1,13 @@
 #include <iostream>
 #include <err.h>
 #include <string>
-#include <queue>
 #include <climits>
 #include <unordered_set>
-#include <stack>
 #include <algorithm>
 #include <list>
 #include <SDL2/SDL.h>
 #include <SDL2/SDL_image.h>
 #include <SDL2/SDL_ttf.h>
-#include <set>
 #include <stdint.h>
 
 #include "../headers/Globcnst.h"
@@ -35,7 +32,6 @@ void GameItself()
   {
     dots_game[i].exist = false;
     dots_game[i].visited = false;
-    dots_game[i].deadend = false;
     dots_game[i].spaceinside = false;
     dots_game[i].spaceborder = false;
   }
